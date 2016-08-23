@@ -1,3 +1,7 @@
+#+TITLE: The Art of Computer Programming - Section 1.3.1 Exercises
+#+AUTHOR: Chris Vig
+#+EMAIL: chris@invictus.so
+
 * Chapter 1.3.1 - Description of MIX
 
 ** Exercise 1
@@ -52,7 +56,7 @@ This corresponds to the following instruction:
 
 We can use the following simple program to evaluate this:
 
-#+NAME: ch-1-3-1-ex-6
+#+NAME: ex6
 #+BEGIN_SRC mixal :exports code
           ORIG    3000
   VALUE   CON     5(1:1),1(2:2),200(3:4),15(5:5)
@@ -66,10 +70,10 @@ instruction and memory address as needed.
 
 The results are:
 
-*=LDAN 3000=*
+*** =LDAN 3000=
 
 #+BEGIN_SRC mixal :mixvm rA :var %INST%="LDAN" %ADDR%="3000"
-<<ch-1-3-1-ex-6>>
+<<ex6>>
 #+END_SRC
 
 #+RESULTS:
@@ -79,10 +83,10 @@ The results are:
 The =rA= register is set to the same value as memory location 3000, except that
 the sign bit is inverted.
 
-*=LD2N 3000(3:4)=*
+*** =LD2N 3000(3:4)=
 
 #+BEGIN_SRC mixal :mixvm rI2 :var %INST%="LD2N" %ADDR%="3000(3:4)"
-<<ch-1-3-1-ex-6>>
+<<ex6>>
 #+END_SRC
 
 #+RESULTS:
@@ -91,10 +95,10 @@ the sign bit is inverted.
 
 The =rI2= register is set to -200.
 
-*=LDX 3000(1:3)=*
+*** =LDX 3000(1:3)=
 
 #+BEGIN_SRC mixal :mixvm rX :var %INST%="LDX" %ADDR%="3000(1:3)"
-<<ch-1-3-1-ex-6>>
+<<ex6>>
 #+END_SRC
 
 #+RESULTS:
@@ -105,10 +109,10 @@ The =rX= register is set to 5(3:3),1(4:4),??(5:5). The result is partially undef
 since we are taking half of the 200(3:4) field from memory address 3000. The
 result would depend on whether the underlying hardware was binary or decimal.
 
-*=LD6 3000=*
+*** =LD6 3000=
 
 #+BEGIN_SRC mixal :mixvm rI6 :var %INST%="LD6" %ADDR%="3000"
-<<ch-1-3-1-ex-6>>
+<<ex6>>
 #+END_SRC
 
 #+RESULTS:
@@ -118,10 +122,10 @@ result would depend on whether the underlying hardware was binary or decimal.
 This result is completely undefined since we are attempting to place too many bytes
 into the =rI6= register.
 
-*=LDXN 3000(0:0)=*
+*** =LDXN 3000(0:0)=
 
 #+BEGIN_SRC mixal :noweb yes :exports results :mixvm rX :var %INST%="LDXN" %ADDR%="3000(0:0)"
-<<ch-1-3-1-ex-6>>
+<<ex6>>
 #+END_SRC
 
 #+RESULTS:
@@ -134,7 +138,7 @@ into the =rI6= register.
 
 The following instructions can affect the overflow toggle:
 
-=ADD=, =INCA=, =INCX=, =NUM=
+=ADD=, =DIV=, =INCA=, =INCX=, =JOV=, =JNOV=, =NUM=
 
 ** Exercise 11
 
@@ -152,3 +156,36 @@ to =JNOV 1000=, it would execute that instruction an infinite number of times.
 ** Exercise 16
 
 *** Shortest Possible
+
+#+NAME: ex16-shortest
+#+BEGIN_SRC mixal :mixvm time :exports both
+          ORIG    3000
+  START   ENT1    100     Use the rI1 register to keep count
+  LOOP    DEC1    1
+          STZ     0,1
+          J1NZ    LOOP
+          HLT
+          END     START
+#+END_SRC
+
+#+RESULTS: ex16-shortest
+: = Time =
+: Elapsed time: 411 /Total program time: 411 (Total uptime: 411)
+
+*** Fastest Possible
+
+#+NAME: ex16-fastest
+#+BEGIN_SRC mixal :mixvm time :exports both
+          ORIG    3000
+  START   STZ     0               Store 0 in word 0
+          ENT1    1               Set destination for MOVE to word 1
+          MOVE    0(63)           Move w0 -> w1, w1 -> w2, ... w62 -> w63
+          ENT1    64              Set destination for MOVE to word 64
+          MOVE    63(36)          Move w63 -> w64, ... w98 -> w99
+          HLT
+          END     START
+#+END_SRC
+
+#+RESULTS: ex16-fastest
+: = Time =
+: Elapsed time: 214 /Total program time: 214 (Total uptime: 214)
