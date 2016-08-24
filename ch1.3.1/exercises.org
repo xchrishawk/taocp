@@ -155,27 +155,29 @@ to =JNOV 1000=, it would execute that instruction an infinite number of times.
 
 ** Exercise 16
 
-*** Shortest Possible
+:PROPERTIES:
+:header-args: :exports both :mixvm time
+:END:
 
-#+NAME: ex16-shortest
-#+BEGIN_SRC mixal :mixvm time :exports both
-          ORIG    3000
-  START   ENT1    100     Use the rI1 register to keep count
-  LOOP    DEC1    1
-          STZ     0,1
-          J1NZ    LOOP
-          HLT
-          END     START
-#+END_SRC
+*** Fastest
 
-#+RESULTS: ex16-shortest
-: = Time =
-: Elapsed time: 411 /Total program time: 411 (Total uptime: 411)
+This version has 6 instructions. It works by first setting memory address 0 to
+zero, and then continuously copying that word (for example, address 0 is copied
+to address 1, then address 1 is copied to address 2, etc.)
 
-*** Fastest Possible
+In the =MOVE= instruction, the number of words to copy is set in the F-field of
+the instruction (for example, =MOVE 0(10)= moves 10 words starting at address 0).
+Since the F-field is a single byte, and we can only express 64 values in a byte,
+we can copy at most 63 words at a time. Therefore we:
+
+- Set the first byte
+- Copy it 63 times
+- Copy it 36 more times
+
+For a total of 100 bytes.
 
 #+NAME: ex16-fastest
-#+BEGIN_SRC mixal :mixvm time :exports both
+#+BEGIN_SRC mixal :tangle ex16-fastest.mixal
           ORIG    3000
   START   STZ     0               Store 0 in word 0
           ENT1    1               Set destination for MOVE to word 1
@@ -189,3 +191,200 @@ to =JNOV 1000=, it would execute that instruction an infinite number of times.
 #+RESULTS: ex16-fastest
 : = Time =
 : Elapsed time: 214 /Total program time: 214 (Total uptime: 214)
+
+*** Smallest
+
+This version is slightly smaller (5 bytes instead of 6), however it's almost
+twice as slow.
+
+#+NAME: ex16-shortest
+#+BEGIN_SRC mixal :tangle ex16-shortest.mixal
+          ORIG    3000
+  START   ENT1    100     Use the rI1 register to keep count
+  LOOP    DEC1    1
+          STZ     0,1
+          J1NZ    LOOP
+          HLT
+          END     START
+#+END_SRC
+
+#+RESULTS: ex16-shortest
+: = Time =
+: Elapsed time: 411 /Total program time: 411 (Total uptime: 411)
+
+** Exercise 18
+
+#+NAME: ex18
+#+BEGIN_SRC mixal :exports both :mixvm all time
+          ORIG    3000
+  START   STZ     1               m1   := + 00 00 00 00 00
+          ENNX    1               rX   := - 00 00 00 00 01
+          STX     1(0:1)          m1   := - 01 00 00 00 00
+          SLAX    1               rX   := - 00 00 00 01 00
+          ENNA    1               rA   := - 00 00 00 00 01
+          INCX    1               rX   := - 00 00 00 00 63 (seems like this would be undefined?)
+          ENT1    1               rI1  := + 00 01
+          SRC     1               rX   := - 01 00 00 00 00, rA   := - 63 00 00 00 00
+          ADD     1               rA   := - 00 00 00 00 00, OF   := T
+          DEC1    -1              rI2  := + 00 02
+          STZ     1               m1   := + 00 00 00 00 00
+          CMPA    1               CMP  := E
+          MOVE    -1,1(1)         rI2  := + 00 03
+          NUM     1
+          CHAR    1
+          HLT     1
+          END     START
+#+END_SRC
+
+#+RESULTS: ex18
+#+begin_example
+= Time =
+Elapsed time: 52 /Total program time: 52 (Total uptime: 52)
+
+= Machine State =
+rA: - 30 30 30 30 30 (0511305630)
+rX: - 31 30 30 30 30 (0528082846)
+rJ: + 00 00 (0000)
+rI1: + 00 03 (0003)	rI2: + 00 00 (0000)
+rI3: + 00 00 (0000)	rI4: + 00 00 (0000)
+rI5: + 00 00 (0000)	rI6: + 00 00 (0000)
+Overflow: T
+Cmp: E
+#+end_example
+
+** Exercise 21
+
+*** Part 1
+
+In GNU MDK, the =rJ= register is set to zero at power up (after the program has
+been initially loaded). I'm assuming that's an implementation detail. Once it's
+been set to a non-zero value, there's no way to ever get it back to zero, since
+the =rJ= register is set to the address *after* the most recent jump instruction.
+Even if you're jumping from address 0, it would still be set to 1.
+
+*** Part 2
+
+We want to get =rJ= to point at an arbitrary number (N). Since =rJ= is set to
+the address of the next instruction after the last jump instruction that was run,
+we need to get a jump instruction into address N-1. The =JMP= instruction we run
+also needs to get us back into the main program. We also need to cache the
+contents of N-1 so we can restore them before completing the program.
+
+Here's the program. I would have liked to combine the creation of the "static"
+parts of the instruction into one instruction, but MDK didn't seem to like the
+W-expression for some reason.
+
+#+NAME: ex21
+#+BEGIN_SRC mixal :exports both :tangle ex21 :var TARGET=1500 :mixvm rJ m1499
+          ORIG    3000
+  START   ENT4    TARGET          Load the target address into I4
+          DEC4    1               Decrement rI4 to byte before target rJ
+          LDX     0,4             Make copy of word we will overwrite
+          ENTA    39              Assemble instruction
+          STA     0,4(5:5)
+          ENTA    0
+          STA     0,4(4:4)
+          STA     0,4(3:3)
+          ENTA    EXIT            Set JMP to jump back to EXIT in the main proc
+          STA     0,4(1:2)
+          JMP     0,4             Jump to the instruction we created
+  EXIT    STX     0,4             Restore the original word
+          HLT
+          END     START
+#+END_SRC
+
+I executed this with TARGET set to 1500. As shown below, =rJ= is correctly set
+to 1500, and address 1499 is correctly set back to zero.
+
+#+RESULTS: ex21
+: = Register J =
+: rJ: + 23 28 (1500)
+:
+: = Memory 1499 =
+: 1499: + 00 00 00 00 00 (0000000000)
+
+** Exercise 22
+
+:PROPERTIES:
+:header-args: :exports both :var M=3 POW=13 :mixvm time rA
+:END:
+
+*** Fastest
+
+This version does not have any jumps - the power is hard-coded into the
+instructions, since there are 13 copies of the =MUL= instruction. The program
+also takes up a significant chunk of memory (28 instructions total).
+
+#+NAME: ex22-fastest
+#+BEGIN_SRC mixal :tangle ex22-fastest.mixal
+          ORIG    2000
+  VALUE   CON     M
+          ORIG    3000
+  START   ENTA    1
+          MUL     VALUE
+          SLAX    5
+          MUL     VALUE
+          SLAX    5
+          MUL     VALUE
+          SLAX    5
+          MUL     VALUE
+          SLAX    5
+          MUL     VALUE
+          SLAX    5
+          MUL     VALUE
+          SLAX    5
+          MUL     VALUE
+          SLAX    5
+          MUL     VALUE
+          SLAX    5
+          MUL     VALUE
+          SLAX    5
+          MUL     VALUE
+          SLAX    5
+          MUL     VALUE
+          SLAX    5
+          MUL     VALUE
+          SLAX    5
+          MUL     VALUE
+          SLAX    5
+          HLT
+          END     START
+#+END_SRC
+
+This version is slightly faster.
+
+#+RESULTS: ex22-fastest
+: = Time =
+: Elapsed time: 167 /Total program time: 167 (Total uptime: 167)
+:
+: = Register A =
+: rA: + 00 06 05 15 19 (0001594323)
+
+*** Smallest
+
+This version uses a loop to reduce the total number of instructions required.
+The program is much smaller (only 7 total instructions).
+
+#+NAME: ex22-smallest
+#+BEGIN_SRC mixal :tangle ex22-smallest.mixal
+          ORIG    2000
+  VALUE   CON     M
+          ORIG    3000
+  START   ENT1    POW
+          ENTA    1
+  LOOP    MUL     VALUE
+          SLAX    5
+          DEC1    1
+          J1NZ    LOOP
+          HLT
+          END     START
+#+END_SRC
+
+However, the =DEC1= and =J1NZ= instructions make it slightly slower.
+
+#+RESULTS: ex22-smallest
+: = Time =
+: Elapsed time: 194 /Total program time: 194 (Total uptime: 194)
+:
+: = Register A =
+: rA: + 00 06 05 15 19 (0001594323)
