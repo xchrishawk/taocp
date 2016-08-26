@@ -1,0 +1,217 @@
+* Chapter 1.3.2 Exercise 9
+* Chris Vig (chris@invictus.so)
+
+* -- Symbolic Constants --
+
+LPR	EQU	19		Line printer is device 19
+
+* -- Memory Constants --
+
+	ORIG	0
+
+INST	CON	27(5:5),36(4:4),6(3:3)
+
+	ORIG	100
+
+* -- Jump Table --
+
+* C = 0
+JMPTBL	JMP	CNOP		NOP
+	JMP	CARITH		ADD, FADD
+	JMP	CARITH		SUB, FSUB
+	JMP	CARITH		MUL, FMUL
+	JMP	CARITH		DIV, FDIV
+	JMP	TODO
+	JMP	TODO
+	JMP	TODO
+	JMP	CLDST		LDA
+	JMP	CLDST		LD1
+* C = 10
+	JMP	CLDST		LD2
+	JMP	CLDST		LD3
+	JMP	CLDST		LD4
+	JMP	CLDST		LD5
+	JMP	CLDST		LD6
+	JMP	CLDST		LDX
+	JMP	CLDST		LDAN
+	JMP	CLDST		LD1N
+	JMP	CLDST		LD2N
+	JMP	CLDST		LD3N
+* C = 20
+	JMP	CLDST		LD4N
+	JMP	CLDST		LD5N
+	JMP	CLDST		LD6N
+	JMP	CLDST		LDXN
+	JMP	CLDST		STA
+	JMP	CLDST		ST1
+	JMP	CLDST		ST2
+	JMP	CLDST		ST3
+	JMP	CLDST		ST4
+	JMP	CLDST		ST5
+* C = 30
+	JMP	CLDST		ST6
+	JMP	CLDST		STX
+	JMP	TODO
+	JMP	TODO
+	JMP	TODO
+	JMP	TODO
+	JMP	TODO
+	JMP	TODO
+	JMP	TODO
+	JMP	TODO
+* C = 40
+	JMP	TODO
+	JMP	TODO
+	JMP	TODO
+	JMP	TODO
+	JMP	TODO
+	JMP	TODO
+	JMP	TODO
+	JMP	TODO
+	JMP	TODO
+	JMP	TODO
+* C = 50
+	JMP	TODO
+	JMP	TODO
+	JMP	TODO
+	JMP	TODO
+	JMP	TODO
+	JMP	TODO
+	JMP	TODO
+	JMP	TODO
+	JMP	TODO
+	JMP	TODO
+* C = 60
+	JMP	TODO
+	JMP	TODO
+	JMP	TODO
+
+* -- Subroutines --
+
+	ORIG	2000
+
+* Subroutine: MAIN - Main entry point
+
+MAIN	LD1	INST(5:5)	Get opcode
+	CMP1	=64=		Opcode must be < 63
+	JL	JMPTBL,1	Use jump table to figure out what to do
+	JMP	BAD		Instruction is bad
+
+* Subroutine: CNOP - Check NOP instruction
+
+CNOP	LDA	INST		Entire word must be zero
+	JANZ	BAD
+	JMP	GOOD
+
+* Subroutine: CARITH - Check arithmetic instruction
+
+CARITH	JMP	FSPEC		Get F-spec in rAX
+	JMP	F056		Verify F-spec is either (0:5) or (6)
+	JMP	I06		Verify index is from 0 to 6
+	JMP	GOOD
+
+* Subroutine: CLDST - Check LD* or ST* instruction
+
+CLDST	JMP	FSPEC		Get F-spec in rAX
+	JMP	F05		F-spec must be (0:5)
+	JMP	I06		Index must be 0 to 6
+	JMP	GOOD
+
+* Subroutine: F05 - Fail if F-spec is not (0:5)
+* Arguments:
+*	rA - L of f-spec
+*	rX - R of f-spec
+
+F05	STJ	1F
+	CMPX	=5=
+	JG	BAD		R > 5 -> BAD
+	STX	2F
+	CMPA	2F
+	JG	BAD		L > R -> BAD
+1H	JMP	*
+2H	CON	0		Storage space
+
+* Subroutine: F056 - Fail if F-spec is not (0:5) or (6)
+* Arguments:
+*	rA - L of f-spec
+*	rX - R of f-spec
+
+F056	STJ	2F		Store return address
+	CMPX	=6=		Compare R against 6
+	JG	BAD		R > 6 -> bad instruction
+	JE	1F		R == 6 -> L must be zero
+	STX	3F
+	CMPA	3F
+	JG	BAD		L > R - BAD
+	JMP	2F		All OK - return
+1H	JANZ	BAD		R == 6. If L != 0, INSTis bad.
+2H	JMP	*
+3H	CON	0		Storage space
+
+* Subroutine: FSPEC - Get instruction F-spec in (L:R) format
+* Return values:
+*	rA - L of f-spec
+*	rX - R of f-spec
+
+FSPEC	STJ	1F		Store return address in JMP instruction
+	ENTA	0
+	LDX	INST(4:4)	Set rAX to f-spec
+	DIV	=8=		Divide f-spec by 8
+1H	JMP	*
+
+* Subroutine: I0 - Fail if index is not zero
+
+I0	STJ	1F
+	LDA	INST(3:3)
+	JANZ	BAD		I != 0 -> BAD
+1H	JMP	*
+
+* Subroutine: I06 - Fail if index is not between 0 and 6
+
+I06	STJ	1F
+	LDA	INST(3:3)
+	CMPA	=6=
+	JG	BAD		I > 6 -> BAD
+1H	JMP	*
+
+* Subroutine: GOOD - Prints "GOOD" to line printer and halts
+
+GOOD	LDA	1F
+	JMP	PRINT
+1H	ALF	"GOOD "
+
+* Subroutine BAD - Prints "BAD" to line printer and halts
+
+BAD	LDA	1F
+	JMP	PRINT
+1H	ALF	"BAD  "
+
+* (TEMP) Subroutine TODO - Prints "TODO" to line printer and halts
+
+TODO	LDA	1F
+	JMP	PRINT
+1H	ALF	"TODO "
+
+* Subroutine PRINT -Prints word in rA to line printer and halts
+* Arguments:
+*	rA - word to print
+
+PRINT	STA	2F
+	OUT	1F(LPR)
+	HLT
+1H	ALF	"STATU"		Reserve 14-word buffer for output
+	ALF	"S IS "
+2H	CON	0		Status word will go here
+	CON	0
+	CON	0
+	CON	0
+	CON	0
+	CON	0
+	CON	0
+	CON	0
+	CON	0
+	CON	0
+	CON	0
+	CON	0
+
+	END	MAIN
