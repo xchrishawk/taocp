@@ -1,0 +1,8 @@
+
+ORIG    3000
+START   ENT1    100     Use the rI1 register to keep count
+LOOP    DEC1    1
+        STZ     0,1
+        J1NZ    LOOP
+        HLT
+        END     START

@@ -1,0 +1,35 @@
+
+M	EQU	3
+POW	EQU	13
+        ORIG    2000
+VALUE   CON     M
+        ORIG    3000
+START   ENTA    1
+        MUL     VALUE
+        SLAX    5
+        MUL     VALUE
+        SLAX    5
+        MUL     VALUE
+        SLAX    5
+        MUL     VALUE
+        SLAX    5
+        MUL     VALUE
+        SLAX    5
+        MUL     VALUE
+        SLAX    5
+        MUL     VALUE
+        SLAX    5
+        MUL     VALUE
+        SLAX    5
+        MUL     VALUE
+        SLAX    5
+        MUL     VALUE
+        SLAX    5
+        MUL     VALUE
+        SLAX    5
+        MUL     VALUE
+        SLAX    5
+        MUL     VALUE
+        SLAX    5
+        HLT
+        END     START

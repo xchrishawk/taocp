@@ -1,0 +1,9 @@
+
+ORIG    3000
+START   STZ     0               Store 0 in word 0
+        ENT1    1               Set destination for MOVE to word 1
+        MOVE    0(63)           Move w0 -> w1, w1 -> w2, ... w62 -> w63
+        ENT1    64              Set destination for MOVE to word 64
+        MOVE    63(36)          Move w63 -> w64, ... w98 -> w99
+        HLT
+        END     START

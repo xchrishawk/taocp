@@ -1,0 +1,14 @@
+
+M	EQU	3
+POW	EQU	13
+        ORIG    2000
+VALUE   CON     M
+        ORIG    3000
+START   ENT1    POW
+        ENTA    1
+LOOP    MUL     VALUE
+        SLAX    5
+        DEC1    1
+        J1NZ    LOOP
+        HLT
+        END     START
