@@ -1,0 +1,36 @@
+* Algorithm P (TAOCP Section 1.3.2)
+* Chris Vig (chris@invictus.so)
+
+* Memory Locations
+* TABLE - table of primes
+
+* Register Assignments
+* I1 - count of primes found so far (J)
+* I2 - current candidate prime (N)
+* I3 - index of current prime divisor we are checking (K)
+
+* Symbolic Constants
+TABLE	EQU	0		Primes table
+IDX	EQU	500		Offset for indexing into primes table
+* Memory Constants
+	ORIG	TABLE
+	CON	2
+* Instructions
+	ORIG	3000
+P1	ENT1	0-IDX		J := 0
+	ENT2	3		N := 3
+P2	INC1	1		J := J + 1
+	ST2	IDX,1		TABLE[J] := N
+P3	J1Z	FINISH		J == 500? JMP to FINISH (we are done)
+P4	INC2	2		N := N + 2
+P5	ENT3	1-IDX		K := 1
+P6	ENTA	0
+	ENTX	0,2
+	DIV	IDX,3		rA := N / TABLE[K], rX := N % TABLE[K]
+	JXZ	P4		REM == 0? JMP to P4 (N is not prime)
+P7	CMPA	IDX,3
+	JLE	P2		QUO < TABLE[K]? JMP to P2 (N is prime)
+P8	INC3	1		K := K + 1
+	JMP	P6		JMP to P6 (try next prime divisor)
+FINISH	HLT
+	END	P1

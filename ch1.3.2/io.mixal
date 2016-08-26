@@ -1,0 +1,48 @@
+* Objective - print a table of all characters
+
+
+
+DEST	EQU	0
+LPR	EQU	19
+	ORIG	3000
+
+* Subroutine: Get F-Spec of (L:R)
+* Arguments:
+*   	L - rA
+*   	R - rX
+* Return value:
+*   	F-spec - rA
+
+FSPEC	STJ	1F		Store return address at 1H
+	STX	2F		Save off R into memory
+	MUL	=8=		Multiply initial field times 8
+	SLAX	5		Shift rA <- rX. rA now contains 8*L
+	ADD	2F		Add R back in. rA now contains 8*L+R
+1H	JMP	*		Jump back to caller.
+2H	CON	0		Reserved for usage by subroutine
+
+* Main Entry Point
+* Register assignments:
+*   	rI1 - current word we are writing to
+*   	rI2 - current index we are writing to
+*   	rI3 - current output value
+
+MAIN	ENT1	DEST		Initialize rI1 (current output address)
+	ENT3	0		Initialize rI3 (current output value)
+1H	ENT2	1		Initialize rI2 (current output index)
+2H	ENTA	0,2		rA := rI2 (L of fspec)
+	ENTX	0,2		rX := rI2 (R of fspec)
+	JMP	FSPEC		Calculate fspec
+	STA	3F(4:4)		Store fspec in ST3 instruction below
+3H	ST3	0,1		Write the current value to memory
+	INC3	1		Increment output value
+	INC2	1		Increment index
+	CMP2	=5=
+	JLE	2B		If rI2 <= 5, loop back without resetting rI2
+	INC1	1		rI2 > 5. Increment rI1 (output word)
+	CMP1	=14=
+	JE	4F		If rI1 == 14, finish
+	JMP	1B		Reset rI2 to 1 and loop
+4H	OUT	DEST(LPR)	Print the table
+	HLT
+	END	MAIN

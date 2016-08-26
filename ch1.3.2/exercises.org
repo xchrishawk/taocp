@@ -1,0 +1,39 @@
+#+TITLE: The Art of Computer Programming - Section 1.3.2 Exercises
+#+AUTHOR: Chris Vig
+#+EMAIL: chris@invictus.so
+
+* Chapter 1.3.2 - The MIX Assembly Language
+
+** Exercise 1
+
+You would need to do this using two instructions, one to load the value into a
+register, and then a second instruction to store the register contents into the
+memory cell. It could look like this:
+
+#+NAME: ex1
+#+BEGIN_SRC mixal :exports both :mixvm rA m500
+  X       EQU     500
+          ORIG    2000
+  START   ENTA    1000
+          STA     X
+          HLT
+          END     START
+#+END_SRC
+
+In the above example, we first set =rA= to 1000 using the =ENTA= instruction, and
+then store that into memory address =X= using the =STA= instruction. =X= has been
+previously defined to be 500 using an =EQU= directive. The results are shown
+below.
+
+#+RESULTS: ex1
+: = Register A =
+: rA: + 00 00 00 15 40 (0000001000)
+:
+: = Memory 500 =
+: 0500: + 00 00 00 15 40 (0000001000)
+
+** Exercise 2
+
+In program M, the =JMP= instruction at that address would have already been
+overwritten by the =STJ= instruction at line 3. By the time it was executed, it
+would result in a jump back to wherever the procedure was initially called from.
