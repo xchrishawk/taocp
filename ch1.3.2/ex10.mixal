@@ -1,0 +1,166 @@
+* Chapter 1.3.2 Exercise 10
+* Chris Vig (chris@invictus.so)
+
+* -- Symbolic Constants --
+
+ROWS	EQU	4
+COLS	EQU	3
+MATRIX	EQU	1000
+
+* -- Memory Constants --
+
+	ORIG	MATRIX+COLS+1
+
+* Matrix is...
+* 	| 3 1 3 |
+* 	| 1 2 4 |
+* 	| 5 3 5 |
+* 	| 4 3 1 |
+
+AMATRIX	CON	3		MATRIX[1][1]
+	CON	1		MATRIX[1][2]
+	CON	3		MATRIX[1][3]
+	CON	1		MATRIX[2][1]
+	CON	2		MATRIX[2][2]
+	CON	4		MATRIX[2][3]
+	CON	5		MATRIX[3][1]
+	CON	3		MATRIX[3][2]	<- Saddle point is here
+	CON	5		MATRIX[3][3]
+	CON	4		MATRIX[4][1]
+	CON	3		MATRIX[4][2]
+	CON	1		MATRIX[4][3]
+
+* -- Instructions --
+
+* Subroutine MAIN - Main entry point
+
+	ORIG	3000
+
+MAIN	LD1	MAINROW		rI1 := row we're looking at
+	INC1	1		Increment row
+	ST1	MAINROW		Store row counter
+	CMP1	=ROWS=		Run out of rows?
+	JG	3F		If so, DONE
+
+1H	JMP	MIN		Get minimum column index for current row
+	LD2	MINCOL		rI2 := minimum column index
+	JMP	MAX		Get maximum row index for column with minimum value
+
+	LDA	MAINROW		Is the maximum row equal to the current row?
+	CMPA	MAXROW
+	JE	2F		If so, we found a saddle point!
+	JMP	MAIN		If not, run another loop
+
+2H	LD1	MAXROW		Calculate address of the current main row/column
+	LD2	MINCOL
+	JMP	ADDR
+	ST5	SCRATCH		Store address in rI1
+	LD1	SCRATCH
+	JMP	4F
+
+3H	ENT1	0		We didn't find a saddle point - rI1 := 0
+
+4H	HLT
+
+* Subroutine MIN - Find minimum column in row
+*
+* Arguments:
+*	rI1 - Row number we want to check
+*
+* Return value:
+*	MINCOL - Col number of col with minimum value in this row
+*	MINVAL - Value of minimum value in this row
+*
+* Register assignments:
+*	rI4 - Current col counter
+*	rI5 - Current col address
+
+MIN	STJ	3F		Store return address
+
+	ENT2	1		Calculate start address
+	JMP	ADDR
+
+	ENT4	1		current col := 1
+1H	ST4	MINCOL		minimum col := current col
+	LDA	0,5		rA := value at current col
+	STA	MINVAL		minimum value := value at current col
+
+2H	INC4	1		Increment current col
+	CMP4	=COLS=		Have we reached the end of the row?
+	JG	3F		If so, return
+
+	INC5	1		Increment address we're looking at
+	LDA	0,5		Get value of next address
+	CMPA	MINVAL		Is value < current minimum value?
+	JL	1B		If so, store minimum column and minimum value
+	JMP	2B		Otherwise, run another loop
+
+3H	JMP	*		Return to caller
+
+* Subroutine MAX - Find maximum row in column
+*
+* Arguments:
+*	rI2 - Col number we want to check
+*
+* Return value:
+*	MAXROW - Row number of row with maximum value in this col
+*	MAXVAL - Value of maximum value in this col
+*
+* Register assugments:
+*	rI4 - Current row counter
+*	rI5 - Current row address
+
+MAX	STJ	3F		Store return address
+
+	ENT1	1		Calculate start address
+	JMP	ADDR
+
+	ENT4	1		current row := 1
+1H	ST4	MAXROW		maximum row := current row
+	LDA	0,5		rA := value at current row
+	STA	MAXVAL		maximum value := value at current row
+
+2H	INC4	1		Increment current row
+	CMP4	=ROWS=		Have we reached the end of the row?
+	JG	3F		If so, return
+
+	INC5	COLS		Increment address we're looking at
+	LDA	0,5		Get value of next address
+	CMPA	MAXVAL		Is value > current maximum value?
+	JG	1B		If so, store maximum row and maximum value
+	JMP	2B		Otherwise, run another loop
+
+3H	JMP	*		Return to caller
+
+* Subroutine ADDR - Find address for row/col
+*
+* Arguments:
+*	rI1 - row number (i)
+*	rI2 - col number (j)
+*
+* Return value:
+*	rI5 - address of value
+
+ADDR	STJ	1F		Store return address
+	ENTA	0,1
+	MUL	=COLS=		Get row * COLS
+	SLAX	5		Shift answer back into rA
+	ST2	SCRATCH		Add col
+	ADD	SCRATCH
+	ADD	=MATRIX=	Add base address
+	STA	SCRATCH		Move value into rI5
+	LD5	SCRATCH
+1H	JMP	*
+
+* -- Scratch Space --
+
+	ORIG	3500
+
+MAINROW	CON	0		Row that main loop is looking at
+MINCOL	CON	0		Minimum column we found
+MINVAL	CON	0		Minimum column value we found
+MAXROW	CON	0		Minimum row we found
+MAXVAL	CON	0		Minimum row value we found
+SCRATCH	CON	0		Temporary value
+
+	END	MAIN
