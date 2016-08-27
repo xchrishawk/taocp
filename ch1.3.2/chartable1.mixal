@@ -1,0 +1,40 @@
+* chartable1.mixal
+* Chris Vig (chris@invictus.so)
+
+* Symbolic constants
+
+TTY	EQU	19			Teletype device number
+MAXCHAR	EQU	55			Maximum character number
+CHARS	EQU	0			Buffer for characters
+NUMS	EQU	CHARS+MAXCHAR		Buffer for numbers
+
+* Main procedure
+*
+* Register assignments:
+*	rI1 - Index of word we're writing to
+*	rI2 - F-spec for byte we're writing to
+*	rI3 - Character code we're writing
+
+	ORIG	3000
+
+MAIN	ENT1	0
+	ENT3	0
+
+1H	ENT2	9			9 = fspec for (1:1)
+2H	ST2	*+1(4:4)		Store f-spec in ST4 instruction in next line
+	ST3	CHARS,1(0:0)		Write character to buffer
+
+	INC3	1			Next character
+	CMP3	=MAXCHAR=		Has character passed MAXCHAR?
+	JG	3F			If so, we're done
+
+	INC2	9			Next F-spec
+	CMP2	=45=			Has F-spec passed 45? (5:5)
+	JLE	2B			If not, run another loop
+
+	INC1	1			Increment index
+	JMP	1B			Loop
+
+3H	HLT
+
+	END	MAIN

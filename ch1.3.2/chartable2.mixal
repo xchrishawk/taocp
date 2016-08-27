@@ -1,0 +1,45 @@
+* chartable1.mixal
+* Chris Vig (chris@invictus.so)
+
+* Symbolic constants
+
+TTY	EQU	19			Teletype device number
+MAXCHAR	EQU	55			Maximum character number
+CHARS	EQU	0			Buffer for characters
+NUMS	EQU	CHARS+MAXCHAR		Buffer for numbers
+
+* Main procedure
+*
+* Register assignments:
+*	rI1 - Index of word we're writing to
+*	rI2 - Character code we're writing
+
+	ORIG	3000
+
+MAIN	ENT1	0
+	ENT2	0
+
+1H	ENTA	0
+	INCA	0,2
+	INC2	1
+	SLA	1
+	INCA	0,2
+	INC2	1
+	SLA	1
+	INCA	0,2
+	INC2	1
+	SLA	1
+	INCA	0,2
+	INC2	1
+	SLA	1
+	INCA	0,2
+	INC2	1
+
+	STA	CHARS,1
+	INC1	1
+	CMP1	=11=
+	JLE	1B
+
+3H	HLT
+
+	END	MAIN
