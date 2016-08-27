@@ -1,4 +1,5 @@
 # TAOCP
+*.dev
 *.html
 *.mix
 octave-workspace
