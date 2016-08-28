@@ -146,3 +146,16 @@ Calling =MAX1N= with =N= equal to =10= returns a value of =101=.
 :
 : = Register A =
 : rA: + 00 00 00 01 37 (0000000101)
+
+*** Exercise 7
+
+There are several reason why self-modifying code is not used any more:
+
+- It makes programs significantly harder to debug, since the instructions which
+  are actually being executed do not necessarily correspond to the instructions
+  specified in the source code file.
+- It makes source code significantly more difficult to read and understand,
+  since any given instruction may or may not be executed as written when the
+  program is actually executed.
+- Most modern CPU architectures have special facilities for handling subroutine
+  calls which make self-modifying code unnecessary.
