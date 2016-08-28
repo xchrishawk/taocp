@@ -1,0 +1,148 @@
+#+TITLE: The Art of Computer Programming - Section 1.4.1 Exercises
+#+AUTHOR: Chris Vig
+#+EMAIL: chris@invictus.so
+
+* Chapter 1.4.1 - Subroutines
+
+** Exercise 2
+
+You could duplicate the =STJ= instruction for each entry point, and then jump
+directly into the body of the subroutine.
+
+#+NAME: ex2
+#+BEGIN_SRC mixal :exports code :eval no
+  MAX50   ENT3    50
+          STJ     EXIT
+          JMP     BODY
+  MAX100  ENT3    100
+          STJ     EXIT
+          JMP     BODY
+  MAXN    STJ     EXIT
+  BODY    NOP
+  ,*       ...
+  EXIT    JMP     *
+#+END_SRC
+
+This results in 50 getting loaded into the =rI3= register when MAX50 is called.
+
+#+BEGIN_SRC mixal :exports results :noweb yes :mixvm rI3
+  <<ex2>>
+  START   JMP     MAX50
+          HLT
+          END     START
+#+END_SRC
+
+#+RESULTS:
+: = Register I3 =
+: rI3: + 00 50 (0050)
+
+** Exercise 4
+
+Here is a procedure which does this:
+
+#+NAME: ex4
+#+BEGIN_SRC mixal :eval no :exports code
+  ,* Initial setup (MAX1N)
+  MAX1N   ENTX    1
+  ,* Initial setup (MAXRN)
+  MAXRN   ST1     8F(1:2)                 bookkeeping for subroutine call
+          STJ     9F
+          STA     N                       N := rA (n)
+          STX     2F(1:2)                 2F(1:2) = rX (r) (modify instruction)
+  ,* Calculate (a)
+          CMPX    =1=                     is r == 1?
+          JE      *+2                     if so, skip next 2 instructions
+          SRAX    5                       shift rA (n) -> rX
+          DIV     2F(1:2)                 rA := n / r, rX := n % r (a)
+          STX     *+1(1:2)                modify next instruction
+          ENT1    *                       rI1 := n % r (a)
+          LDA     X,1                     get initial value
+  ,* Value is maximum
+  1H      STA     V                       V := current value
+  ,* Increment counter
+  2H      INC1    *                       rI1 := rI1 + r
+          CMP1    N                       is rI1 > n?
+          JG      7F                      if so, exit loop
+  ,* Check next value
+          LDA     X,1                     get next value
+          CMPA    V                       next value > V?
+          JLE     2B                      if not, do another loop
+          JMP     1B                      if so, store value and then do another loop
+  ,* Return
+  7H      LDA     V                       rA := maximum value found
+  8H      ENT1    *                       restore rI1 to initial value
+  9H      JMP     *                       jump back to caller
+  ,* Storage space
+  N       CON     0
+  V       CON     0
+#+END_SRC
+
+The calling convention is as follows:
+
+- Pre-conditions
+  - =rA= contains =N=
+  - =rX= contains =R=
+- Post-conditions
+  - =rA= contains the maximum value found
+  - Index registers (=rI1= - =rI6=) are unmodified
+  - State of =rX=, =CMP=, and =OF= is undefined
+
+For example, say you have the following block of memory:
+
+#+NAME: ex4-example-array
+#+BEGIN_SRC mixal :exports code :eval no
+          ORIG    0
+  X       CON     99
+          CON     3
+          CON     99
+          CON     101
+          CON     7
+          CON     99
+          CON     99
+          CON     4
+          CON     100
+          CON     99
+          CON     15
+#+END_SRC
+
+Calling =MAXRN= with =N= equal to =10= and =R= equal to =3= returns a value of =15=.
+
+#+NAME: ex4-example-MAXRN
+#+BEGIN_SRC mixal :noweb yes :exports results :mixvm rA time
+  <<ex4-example-array>>
+          ORIG    3000
+  MAIN    ENTA    10                      rA := 10 (n)
+          ENTX    3                       rX := 3 (r)
+          JMP     MAXRN                   Call MAXRN
+          HLT
+  <<ex4>>
+          END     MAIN
+#+END_SRC
+
+#+RESULTS: ex4-example-MAXRN
+: = Time =
+: Elapsed time: 86 /Total program time: 86 (Total uptime: 86)
+:
+: = Register A =
+: rA: + 00 00 00 00 15 (0000000015)
+
+Calling =MAX1N= with =N= equal to =10= returns a value of =101=.
+
+#+NAME: ex4-example-MAX1N
+#+BEGIN_SRC mixal :noweb yes :exports results :mixvm rA time
+  <<ex4-example-array>>
+          ORIG    3000
+  MAIN    ENTA    10                      rA := 10 (n)
+          ENTX    3                       rX := 3 (r)
+          JMP     MAX1N                   Call MAXRN
+          HLT
+  <<ex4>>
+          END     MAIN
+#+END_SRC
+
+#+RESULTS: ex4-example-MAX1N
+: = Time =
+: Elapsed time: 145 /Total program time: 145 (Total uptime: 145)
+:
+: = Register A =
+: rA: + 00 00 00 01 37 (0000000101)
