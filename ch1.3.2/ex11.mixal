@@ -1,0 +1,83 @@
+* ex11.mixal
+* Chris Vig (chris@invictus.so)
+
+* -- Symbolic Constants --
+
+TAPE	EQU	20			Paper tape is device #20
+TAPEBLK	EQU	14			Paper tape block size is 14 words
+
+TTY	EQU	19			Teletype printer is device #19
+TTYBLK	EQU	14			Teletype printer block size is 14 words
+
+MAXCHAR	EQU	55			The maximum valid char
+ENDCHAR	EQU	46			Ending character is *
+
+CHARBUF	EQU	0			Buffer to store character counts in
+INBUF	EQU	CHARBUF+MAXCHAR		Buffer to store input from tape
+PROCBUF	EQU	INBUF+TAPEBLK		Buffer we are currently scanning (previously read block)
+OUTBUF	EQU	PROCBUF+TAPEBLK		Buffer to store output to teletype pritner
+
+* -- Instructions --
+
+	ORIG	3000
+
+* Initial setup
+
+MAIN	IN	INBUF(TAPE)		One-time setup: read an initial line of input
+
+* Input processing
+
+1H	JBUS	*(TAPE)			Wait for tape to finish reading
+	ENT1	PROCBUF			Set destination for MOVE instruction
+	MOVE	INBUF(TAPEBLK)		Move input buffer into processing buffer
+	IN	INBUF(TAPE)		Read another line of input
+
+* Main counting loop
+
+	ENT1	0			rI1 = index of word we're working on
+2H	ENT2	0			rI2 = index of byte we're working on
+
+	LDX	PROCBUF,1		Load the word into rX
+3H	ENTA	0			Reset A to zero
+	SLAX	1			Shift the next byte from rX into rA
+	STA	*+1(1:2)		Modify next instruction
+	ENT3	*			Load character into rI3
+
+	CMP3	=ENDCHAR=		If the current character is the end character...
+	JE	4F			    jump to the output procedure
+
+	LDA	CHARBUF,3		Load current count for character into rA
+	INCA	1			Increment rA
+	STA	CHARBUF,3		Put incremented value back into character buffer
+
+	INC2	1			Increment byte counter
+	CMP2	=5=			If we've *not* run out of bytes in this word...
+	JL	3B			    do another inner loop
+
+	INC1	1			Increment word counter
+	CMP1	=TAPEBLK=		If we've *not* run out words in this block...
+	JL	2B			    do another outer loop
+
+	JMP	1B			Jump back to process the next block of input
+
+* Output procedure
+
+4H	ENT1	1			rI1 := letter we're outputting data for (skip blank)
+5H	ST1	OUTBUF(1:1)		Store letter in first word in output buffer
+
+	LDA	CHARBUF,1		Get count of this letter
+	JAZ	6F			If count is zero, don't print output for this letter
+	CHAR	0			Convert to character representation
+	STA	OUTBUF+1		Put string in output buffer
+	STX	OUTBUF+2
+
+	JBUS	*(TTY)			Wait for TTY to be ready
+	OUT	OUTBUF(TTY)		Print the output buffer to the TTY
+
+6H	INC1	1			Increment letter counter
+	CMP1	=MAXCHAR=		If we've *not* reached the last char...
+	JL	5B			    run another loop
+
+	HLT	0			That's all folks
+
+	END	MAIN
