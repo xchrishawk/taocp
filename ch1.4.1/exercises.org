@@ -147,7 +147,152 @@ Calling =MAX1N= with =N= equal to =10= returns a value of =101=.
 : = Register A =
 : rA: + 00 00 00 01 37 (0000000101)
 
-*** Exercise 7
+** Exercise 6
+
+Here is a subroutine which does this:
+
+#+NAME: ex6
+#+BEGIN_SRC mixal :eval no :exports code
+  MYMOVE  STJ     EXIT
+
+  ,* First, we save off the current state of rA and rX, since we're going to need
+  ,* to overwrite them in this procedure.
+
+          STA     SAVEDA
+          STX     SAVEDX
+
+  ,* We're going to temporarily overwrite rI6 to pull out the information we need
+  ,* from the NOP instruction after the JMP that got us here. We need to set up
+  ,* instructions to restore rI6 to its original state after we're done.
+
+          ST6     1F(0:2)                 Set up instruction to restore rI6 once done
+          STJ     *+1
+          ENT6    *                       rI6 := rJ
+          LDX     0,6                     Load the entire NOP instruction into rX
+          STX     SAVEDI                  Save the entire NOP instruction into memory
+  1H      ENT6    *                       rI6 := its original value
+
+  ,* Now we need to get the source address that we're copying from. This is M,
+  ,* equal to the A field indexed by the I field of the instruction we currently
+  ,* have in rX. First, get the index value into rA.
+
+          SRAX    2                       Shift rAX. Index field is now in rX(5:5).
+          STX     *+1(3:3)                Overwrite index field of next instruction
+          ENTA    0,1                     rA := index value
+          ADD     SAVEDI(1:2)             rA := rA + address field from saved instruction (== M now).
+          STA     1F(0:2)                 Store address in LDA instruction below
+
+  ,* The destination address is already in rI1. Store it in the STA instruction below
+  ,* for indexing.
+
+          ST1     2F(0:2)                 Set base address for writing out
+
+  ,* We need to use rI6 (again) to index the source/destination addresses we use while
+  ,* copying. Store it again for cleanup before we return.
+
+          ST6     9F(0:2)                 Set up instruction to restore rI6 once done
+          LD6     SAVEDI(4:4)             rI6 := number of words to copy
+          DEC6    1                       rI6 := rI6 - 1
+
+  ,* Now we can finally start copying.
+
+  1H      LDA     *,6                     Load the next word into rA
+  2H      STA     *,6                     Store the word into the destination address
+          DEC6    1                       rI6 := rI6 - 1
+          J6NN    1B                      If rI6 >= 0, loop again
+
+  ,* One of the requirements is that rI1 is incremented by the number of words copied.
+  ,* Since we didn't use for it indexing it's still pointing to its original value.
+  ,* Go ahead and increment it here.
+
+          ENTA    0,1                     rA := rI1
+          ADD     SAVEDI(4:4)             rA := rA + number of words copied
+          STA     *+1(0:2)                rI1 := rA
+          ENT1    *
+
+  ,* Final cleanup/register restoration before returning
+
+  9H      ENT6    *                       Restore rI6
+          LDA     SAVEDA                  Restore rA
+          LDX     SAVEDX                  Restore rX
+  EXIT    JMP     *                       Return to caller
+
+  ,* Local variables
+
+  SAVEDA  CON     0
+  SAVEDX  CON     0
+  SAVEDI  CON     0
+#+END_SRC
+
+We can execute this with the following block:
+
+#+NAME: ex6-example
+#+BEGIN_SRC mixal :exports code :eval no
+  SRCBLK  EQU     1100
+  OFFSET  EQU     -12
+  DSTBLK  EQU     100
+  COUNT   EQU     5
+
+          ORIG    SRCBLK+OFFSET
+
+          CON     1
+          CON     2
+          CON     3
+          CON     4
+          CON     5
+          CON     6                       <- not copied
+
+          ORIG    3000
+
+  MAIN    ENTA    1                       Set up registers to verify not overwritten
+          ENTX    2
+          ENT1    DSTBLK
+          ENT2    2
+          ENT3    3
+          ENT4    4
+          ENT5    5
+          ENT6    OFFSET
+
+          JMP     MYMOVE                  Call the procedure
+          NOP     SRCBLK,6(5)
+
+          HLT
+#+END_SRC
+
+This produces the result:
+
+#+NAME: ex6-execution
+#+BEGIN_SRC mixal :exports results :noweb yes :mixvm time all m100-m105
+  <<ex6-example>>
+  <<ex6>>
+          END     MAIN
+#+END_SRC
+
+#+RESULTS: ex6-execution
+#+begin_example
+= Time =
+Elapsed time: 94 /Total program time: 94 (Total uptime: 94)
+
+= Machine State =
+rA: + 00 00 00 00 01 (0000000001)
+rX: + 00 00 00 00 02 (0000000002)
+rJ: + 47 33 (3041)
+rI1: + 01 41 (0105)	rI2: + 00 02 (0002)
+rI3: + 00 03 (0003)	rI4: + 00 04 (0004)
+rI5: + 00 05 (0005)	rI6: - 00 12 (0012)
+Overflow: F
+Cmp: E
+
+= Memory 100-105 =
+0100: + 00 00 00 00 01 (0000000001)
+0101: + 00 00 00 00 02 (0000000002)
+0102: + 00 00 00 00 03 (0000000003)
+0103: + 00 00 00 00 04 (0000000004)
+0104: + 00 00 00 00 05 (0000000005)
+0105: + 00 00 00 00 00 (0000000000)
+#+end_example
+
+** Exercise 7
 
 There are several reason why self-modifying code is not used any more:
 
