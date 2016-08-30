@@ -25,7 +25,7 @@ directly into the body of the subroutine.
 
 This results in 50 getting loaded into the =rI3= register when MAX50 is called.
 
-#+BEGIN_SRC mixal :exports results :noweb yes :mixvm rI3
+#+BEGIN_SRC mixal :noweb yes :exports results :mixvm rI3
   <<ex2>>
   START   JMP     MAX50
           HLT
@@ -41,7 +41,7 @@ This results in 50 getting loaded into the =rI3= register when MAX50 is called.
 Here is a procedure which does this:
 
 #+NAME: ex4
-#+BEGIN_SRC mixal :eval no :exports code
+#+BEGIN_SRC mixal :exports code :eval no
   ,* Initial setup (MAX1N)
   MAX1N   ENTX    1
   ,* Initial setup (MAXRN)
@@ -108,14 +108,20 @@ For example, say you have the following block of memory:
 Calling =MAXRN= with =N= equal to =10= and =R= equal to =3= returns a value of =15=.
 
 #+NAME: ex4-example-MAXRN
-#+BEGIN_SRC mixal :noweb yes :exports results :mixvm rA time
+#+BEGIN_SRC mixal :tangle ex4-maxrn.mixal :noweb yes :exports results :mixvm rA time
+  ,* ex4-maxrn.mixal
+  ,* Chris Vig (chris@invictus.so)
+
   <<ex4-example-array>>
+
           ORIG    3000
   MAIN    ENTA    10                      rA := 10 (n)
           ENTX    3                       rX := 3 (r)
           JMP     MAXRN                   Call MAXRN
           HLT
+
   <<ex4>>
+
           END     MAIN
 #+END_SRC
 
@@ -129,14 +135,20 @@ Calling =MAXRN= with =N= equal to =10= and =R= equal to =3= returns a value of =
 Calling =MAX1N= with =N= equal to =10= returns a value of =101=.
 
 #+NAME: ex4-example-MAX1N
-#+BEGIN_SRC mixal :noweb yes :exports results :mixvm rA time
+#+BEGIN_SRC mixal :tangle ex4-max1n.mixal :noweb yes :exports results :mixvm rA time
+  ,* ex4-max1n.mixal
+  ,* Chris Vig (chris@invictus.so)
+
   <<ex4-example-array>>
+
           ORIG    3000
   MAIN    ENTA    10                      rA := 10 (n)
           ENTX    3                       rX := 3 (r)
           JMP     MAX1N                   Call MAXRN
           HLT
+
   <<ex4>>
+
           END     MAIN
 #+END_SRC
 
@@ -152,7 +164,7 @@ Calling =MAX1N= with =N= equal to =10= returns a value of =101=.
 Here is a subroutine which does this:
 
 #+NAME: ex6
-#+BEGIN_SRC mixal :eval no :exports code
+#+BEGIN_SRC mixal :exports code :eval no
   MYMOVE  STJ     EXIT
 
   ,* First, we save off the current state of rA and rX, since we're going to need
@@ -262,9 +274,14 @@ We can execute this with the following block:
 This produces the result:
 
 #+NAME: ex6-execution
-#+BEGIN_SRC mixal :exports results :noweb yes :mixvm time all m100-m105
+#+BEGIN_SRC mixal :tangle ex6.mixal :noweb yes :exports results :mixvm time all m100-m105
+  ,* ex6.mixal
+  ,* Chris Vig (chris@invictus.so)
+
   <<ex6-example>>
+
   <<ex6>>
+
           END     MAIN
 #+END_SRC
 

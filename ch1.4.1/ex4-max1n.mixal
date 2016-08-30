@@ -1,0 +1,58 @@
+
+* ex4-max1n.mixal
+* Chris Vig (chris@invictus.so)
+
+        ORIG    0
+X       CON     99
+        CON     3
+        CON     99
+        CON     101
+        CON     7
+        CON     99
+        CON     99
+        CON     4
+        CON     100
+        CON     99
+        CON     15
+
+        ORIG    3000
+MAIN    ENTA    10                      rA := 10 (n)
+        ENTX    3                       rX := 3 (r)
+        JMP     MAX1N                   Call MAXRN
+        HLT
+
+* Initial setup (MAX1N)
+MAX1N   ENTX    1
+* Initial setup (MAXRN)
+MAXRN   ST1     8F(1:2)                 bookkeeping for subroutine call
+        STJ     9F
+        STA     N                       N := rA (n)
+        STX     2F(1:2)                 2F(1:2) = rX (r) (modify instruction)
+* Calculate (a)
+        CMPX    =1=                     is r == 1?
+        JE      *+2                     if so, skip next 2 instructions
+        SRAX    5                       shift rA (n) -> rX
+        DIV     2F(1:2)                 rA := n / r, rX := n % r (a)
+        STX     *+1(1:2)                modify next instruction
+        ENT1    *                       rI1 := n % r (a)
+        LDA     X,1                     get initial value
+* Value is maximum
+1H      STA     V                       V := current value
+* Increment counter
+2H      INC1    *                       rI1 := rI1 + r
+        CMP1    N                       is rI1 > n?
+        JG      7F                      if so, exit loop
+* Check next value
+        LDA     X,1                     get next value
+        CMPA    V                       next value > V?
+        JLE     2B                      if not, do another loop
+        JMP     1B                      if so, store value and then do another loop
+* Return
+7H      LDA     V                       rA := maximum value found
+8H      ENT1    *                       restore rI1 to initial value
+9H      JMP     *                       jump back to caller
+* Storage space
+N       CON     0
+V       CON     0
+
+        END     MAIN
