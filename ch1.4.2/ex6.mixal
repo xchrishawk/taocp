@@ -1,0 +1,106 @@
+
+* -- Symbolic Constants --
+
+TTY     EQU     19                      Teletype device number
+TTYBLK  EQU     14                      Teletype block size
+LOOPS   EQU     3                       Number of loops of A to run
+
+* -- Instructions --
+
+        ORIG    1000
+
+* Main Procedure
+
+MAIN    JMP     ASTART
+EXIT    HLT
+
+* Subroutine Linkage
+
+AB      STJ     AX                      Jump from coroutine A to coroutine B
+        JMP     BX
+AC      STJ     AX                      Jump from coroutine A to coroutine C
+        JMP     CX
+BA      STJ     BX                      Jump from coroutine B to coroutine A
+        JMP     AX
+BC      STJ     BX                      Jump from coroutine B to coroutine C
+        JMP     CX
+CA      STJ     CX                      Jump from coroutine C to coroutine A
+        JMP     AX
+CB      STJ     CX                      Jump from coroutine C to coroutine B
+        JMP     BX
+
+AX      JMP     ASTART
+BX      JMP     BSTART
+CX      JMP     CSTART
+
+* Coroutine A
+
+ASTART  LDX     ALBL1                   Print A1
+        ENTA    0,1
+        JMP     PRINTN
+        JMP     AB                      Jump to coroutine B
+
+        LDX     ALBL2                   Print A2
+        ENTA    0,1
+        JMP     PRINTN
+        JMP     AC                      Jump to coroutine C
+
+        LDX     ALBL3                   Print A3
+        ENTA    0,1
+        JMP     PRINTN
+        JMP     AB                      Jump to coroutine B
+
+        INC1    1                       Increment counter
+        CMP1    =LOOPS=
+        JL      ASTART                  Loop if counter < LOOPS
+        JMP     EXIT                    Otherwise halt
+
+ALBL1   ALF     "A1:  "
+ALBL2   ALF     "A2:  "
+ALBL3   ALF     "A3:  "
+
+* Coroutine B
+
+BSTART  LDX     BLBL1                   Print B1
+        ENTA    0,2
+        JMP     PRINTN
+        JMP     BA                      Jump to coroutine A
+
+        LDX     BLBL2                   Print B2
+        ENTA    0,2
+        JMP     PRINTN
+        JMP     BC                      Jump to coroutine C
+
+        INC2    1                       Increment counter
+        JMP     BSTART                  Loop
+
+BLBL1   ALF     "B1:  "
+BLBL2   ALF     "B2:  "
+
+* Coroutine C
+
+CSTART  LDX     CLBL1                   Print C1
+        ENTA    0,3
+        JMP     PRINTN
+        JMP     CB                      Jump to coroutine B
+
+        INC3    1                       Increment counter
+        JMP     CSTART                  Loop
+
+CLBL1   ALF     "C1:  "
+
+* Subroutine PRINTN - print number
+* Arguments:
+*       rA: number to print
+*       rX: label to print
+
+OUTBUF  ORIG    *+TTYBLK
+PRINTN  STJ     9F
+        STX     OUTBUF
+        CHAR
+        STA     OUTBUF+1
+        STX     OUTBUF+2
+        OUT     OUTBUF(TTY)
+9H      JMP     *
+
+        END     MAIN
