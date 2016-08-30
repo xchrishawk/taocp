@@ -275,7 +275,7 @@ parts of the instruction into one instruction, but MDK didn't seem to like the
 W-expression for some reason.
 
 #+NAME: ex21
-#+BEGIN_SRC mixal :exports both :tangle ex21 :var TARGET=1500 :mixvm rJ m1499
+#+BEGIN_SRC mixal :tangle ex21 :exports both :mixvm rJ m1499 :var TARGET=1500
           ORIG    3000
   START   ENT4    TARGET          Load the target address into I4
           DEC4    1               Decrement rI4 to byte before target rJ
@@ -306,7 +306,7 @@ to 1500, and address 1499 is correctly set back to zero.
 ** Exercise 22
 
 :PROPERTIES:
-:header-args: :exports both :var M=3 POW=13 :mixvm time rA
+:header-args: :exports both :mixvm time rA :var M=3 POW=13
 :END:
 
 *** Fastest
