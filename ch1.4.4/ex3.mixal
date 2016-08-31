@@ -1,0 +1,77 @@
+
+* ex3.mixal
+* Chris Vig (chris@invictus.so)
+
+* -- Symbolic Constants --
+
+TAPE    EQU     0                       Device number for the output tape
+TAPEBLK EQU     100                     Block size for the output tape
+SNTL    EQU     -1                      Sentinel value to indicate end of buffer
+
+* -- Instructions --
+
+        ORIG    3000
+
+MAIN    ENT5    3980                    Output 3980 words
+1H      ENTA    0,5
+        JMP     WORDOUT                 Write word
+        DEC5    1                       Decrement counter
+        J5NZ    1B                      Loop
+        JMP     FLUSH                   Flush any remaining output in buffer
+        HLT
+
+* Subroutine WORDOUT - write output word
+* Arguments:n
+*       rA - word to write (must not be negative)
+
+WORDOUT STJ     9F                      Subroutine linkage
+        ST5     8F(1:2)                 Restore rI5 when done
+
+        LD5     PREVOUT                 Get address of previous output word
+        INC5    1                       Go to next word in buffer
+        LDX     0,5                     Is content of next output word negative? (sentinel value)
+        JXNN    1F                      If not, skip the next block
+
+        DEC5    TAPEBLK                 Move rI5 back to beginning of buffer
+        OUT     0,5(TAPE)               Begin writing buffer to tape
+        INC5    TAPEBLK+1               Move rI5 to address of next buffer after sentinel value
+        LD5     0,5                     Get address of next buffer into rI5
+
+1H      STA     0,5                     Store rA into the output word
+        ST5     PREVOUT                 Save address that we wrote to for next time
+
+8H      ENT5    *                       Restore rI5
+9H      JMP     *                       Jump back to caller
+
+* Subroutine FLUSH - flush remaining output
+
+FLUSH   STJ     9F                      Subroutine linkage
+        ST5     8F(1:2)                 Restore rI5 when done
+
+        LD5     PREVOUT                 Get address of previous output word
+1H      INC5    1                       Go to next word in buffer
+        LDX     0,5                     Is content of next output word negative? (sentinel value)
+        JXN     2F                      If so, jump ahead
+        STZ     0,5                     Write zero to output word
+        JMP     1B                      Loop
+
+2H      DEC5    TAPEBLK                 Move rI5 back to beginning of buffer
+        OUT     0,5(TAPE)               Output buffer to tape
+        JBUS    *(TAPE)                 Wait for output to complete
+
+8H      ENT5    *                       Restore rI5
+9H      JMP     *                       Jump back to caller
+
+* -- Memory Buffers --
+
+OUTBUF1 ORIG    *+TAPEBLK               Output buffer #1
+        CON     SNTL
+        CON     *+1
+
+OUTBUF2 ORIG    *+TAPEBLK               Output buffer #2
+        CON     SNTL
+        CON     OUTBUF1
+
+PREVOUT CON     OUTBUF1-1               Address of next word to write to
+
+        END     MAIN
