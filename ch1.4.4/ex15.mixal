@@ -1,0 +1,88 @@
+
+* ex15.mixal
+* Chris Vig (chris@invictus.so)
+
+* -- Symbolic Constants --
+
+INTAPE  EQU     0                       Input tape device number
+OUTTAPE EQU     1                       Output tape device number
+BUFS    EQU     3                       Number of available buffers
+BLKSZ   EQU     100                     I/O block size
+COUNT   EQU     100                     Number of blocks we want to copy
+
+* -- Memory Buffers --
+
+        ORIG    0
+
+        CON     *+BLKSZ+2               Pointer to buffer 2
+BUF1    ORIG    *+BLKSZ                 Buffer 1
+
+        CON     *+BLKSZ+2               Pointer to buffer 3
+BUF2    ORIG    *+BLKSZ                 Buffer 2
+
+        CON     BUF1                    Pointer to buffer 1
+BUF3    ORIG    *+BLKSZ                 Buffer 3
+
+* -- Instructions --
+
+        ORIG    3000
+
+START   ENT1    BUFS                    Initialize Ni = 3
+        ENT2    0                       Initialize No = 0
+        ENT3    BUF1                    Initialize Bi = buffer 1
+        ENT4    BUF1                    Initialize Bo = buffer 2
+        ENT5    COUNT                   Initialize target number of input buffers
+        ENT6    COUNT                   Initialize target number of output buffers
+
+CTRL1   J5NZ    C2I                     Run input coroutine if there are input buffers left
+        J6NZ    C2O                     Run output coroutine if there are output buffers left
+        J6NZ    CTRL1                   Loop again if there are still output buffers left
+        HLT     0                       Done!
+
+        JMP     I2C                     If there are no input buffers available,
+IN1     J1Z     *-1                         yield back to CTRL and try again next time
+
+        DEC1    1                       Decrement Ni - one less input buffer available
+        IN      0,3(INTAPE)             Start input into the currently selected buffer
+        LD3     -1,3                    Move Bi to the next buffer
+        JMP     *+2                     Skip the next jump instruction
+
+        JMP     I2C                     If the input tape device is busy,
+        JBUS    *-1(INTAPE)                 yield back to CTRL and try again next time
+
+        DEC5    1                       Decrement number of input buffers remaining
+        INC2    1                       Increment No - one more output buffer available
+        JMP     I2C                     Unconditional yield back to CTRL
+        JMP     IN1                     Loop again
+
+        JMP     O2C                     If there are no output buffers available,
+OUT1    J2Z     *-1                         yield back to CTRL and try again next time
+
+        DEC2    1                       Decrement No - one less output buffer availalbe
+        OUT     0,4(OUTTAPE)            Start output from the currently selected buffer
+        LD4     -1,4                    Move Bo to the next buffer
+        JMP     *+2                     Skip the next jump instruction
+
+        JMP     O2C                     If the output tape device is busy,
+        JBUS    *-1(OUTTAPE)                yield back to CTRL and try again next time
+
+        DEC6    1                       Decrement number of output buffers remaining
+        INC1    1                       Increment Ni - one more input buffer available
+        JMP     O2C                     Unconditional yield back to CTRL
+        JMP     OUT1                    Loop again
+
+* -- Coroutine Linkage --
+
+C2I     STJ     CX                      Jump from CTRL to IN
+        JMP     IX
+I2C     STJ     IX                      Jump from IN to CTRL
+        JMP     CX
+C2O     STJ     CX                      Jump from CTRL to OUT
+        JMP     OX
+O2C     STJ     OX                      Jump from OUT to CTRL
+        JMP     CX
+IX      JMP     IN1                     Jump to IN
+OX      JMP     OUT1                    Jump to OUT
+CX      JMP     CTRL1                   Jump to CTRL
+
+        END     START

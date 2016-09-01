@@ -132,3 +132,175 @@ Timing information for the complete program is:
 #+RESULTS: ex3-tangle
 : = Time =
 : Elapsed time: 79962 /Total program time: 79962 (Total uptime: 79962)
+
+** Exercise 15
+
+For this exercise, we can use a slightly modified version of the buffer rotation
+algorithm described in this section. We have three buffers (=BUF1=, =BUF2=, and
+=BUF3=). Each buffer can be in one of the following four states:
+
+- *Ready For Input* - Buffer is ready to receive input words.
+- *Inputting* - Buffer is actively receiving input words.
+- *Ready For Output* - Buffer has been filled with input and is ready for output.
+- *Outputting* - Buffer is actively sending output words.
+
+We keep track of the following 6 state variables using the index registers:
+
+- *=rI1=* - Number of buffers in "Ready For Input" state.
+- *=rI2=* - Number of buffers in "Ready For Output" state.
+- *=rI3=* - Pointer to next input buffer.
+- *=rI4=* - Pointer to next output buffer.
+- *=rI5=* - Number of buffers remaining for input
+- *=rI6=* - Number of buffers remaining for output.
+
+When each buffer state transition happens, we make the following changes:
+
+- *Ready For Input -> Inputting*
+  - =rI1 <- rI1 - 1=
+  - =rI3 <- next buffer=
+- *Inputting -> Ready For Output*
+  - =rI2 <- rI2 + 1=
+- *Ready For Output -> Outputting*
+  - =rI2 <- rI2 - 1=
+  - =rI4 <- next buffer=
+- *Outputting -> Ready For Input*
+  - =rI1 <- rI1 + 1=
+
+We use three coroutines:
+
+- *=CTRL=* is the main coroutine which loops continuously as long as there is
+  work still remaining to be done.
+- *=IN=* handles input from the input tape.
+- *=OUT=* handles output to the output tape.
+
+The memory buffers are set up so that the word prior to the beginning of each
+buffer contains a pointer to the next buffer in the circle.
+
+#+NAME: ex15-buffers
+#+BEGIN_SRC mixal :exports code :eval no
+          CON     *+BLKSZ+2               Pointer to buffer 2
+  BUF1    ORIG    *+BLKSZ                 Buffer 1
+
+          CON     *+BLKSZ+2               Pointer to buffer 3
+  BUF2    ORIG    *+BLKSZ                 Buffer 2
+
+          CON     BUF1                    Pointer to buffer 1
+  BUF3    ORIG    *+BLKSZ                 Buffer 3
+#+END_SRC
+
+The =IN= coroutine is as follows:
+
+#+NAME: ex15-in
+#+BEGIN_SRC mixal :exports code :eval no
+          JMP     I2C                     If there are no input buffers available,
+  IN1     J1Z     *-1                         yield back to CTRL and try again next time
+
+          DEC1    1                       Decrement Ni - one less input buffer available
+          IN      0,3(INTAPE)             Start input into the currently selected buffer
+          LD3     -1,3                    Move Bi to the next buffer
+          JMP     *+2                     Skip the next jump instruction
+
+          JMP     I2C                     If the input tape device is busy,
+          JBUS    *-1(INTAPE)                 yield back to CTRL and try again next time
+
+          DEC5    1                       Decrement number of input buffers remaining
+          INC2    1                       Increment No - one more output buffer available
+          JMP     I2C                     Unconditional yield back to CTRL
+          JMP     IN1                     Loop again
+#+END_SRC
+
+The =OUT= coroutine is almost identical, just in the opposite direction:
+
+#+NAME: ex15-out
+#+BEGIN_SRC mixal :exports code :eval no
+          JMP     O2C                     If there are no output buffers available,
+  OUT1    J2Z     *-1                         yield back to CTRL and try again next time
+
+          DEC2    1                       Decrement No - one less output buffer availalbe
+          OUT     0,4(OUTTAPE)            Start output from the currently selected buffer
+          LD4     -1,4                    Move Bo to the next buffer
+          JMP     *+2                     Skip the next jump instruction
+
+          JMP     O2C                     If the output tape device is busy,
+          JBUS    *-1(OUTTAPE)                yield back to CTRL and try again next time
+
+          DEC6    1                       Decrement number of output buffers remaining
+          INC1    1                       Increment Ni - one more input buffer available
+          JMP     O2C                     Unconditional yield back to CTRL
+          JMP     OUT1                    Loop again
+#+END_SRC
+
+The startup and =CTRL= coroutine is as follows:
+
+#+NAME: ex15-ctrl
+#+BEGIN_SRC mixal :exports code :eval no
+  START   ENT1    BUFS                    Initialize Ni = 3
+          ENT2    0                       Initialize No = 0
+          ENT3    BUF1                    Initialize Bi = buffer 1
+          ENT4    BUF1                    Initialize Bo = buffer 2
+          ENT5    COUNT                   Initialize target number of input buffers
+          ENT6    COUNT                   Initialize target number of output buffers
+
+  CTRL1   J5NZ    C2I                     Run input coroutine if there are input buffers left
+          J6NZ    C2O                     Run output coroutine if there are output buffers left
+          J6NZ    CTRL1                   Loop again if there are still output buffers left
+          HLT     0                       Done!
+#+END_SRC
+
+Finally, the coroutine linkage is as follows:
+
+#+NAME: ex15-linkage
+#+BEGIN_SRC mixal :exports code :eval no
+  C2I     STJ     CX                      Jump from CTRL to IN
+          JMP     IX
+  I2C     STJ     IX                      Jump from IN to CTRL
+          JMP     CX
+  C2O     STJ     CX                      Jump from CTRL to OUT
+          JMP     OX
+  O2C     STJ     OX                      Jump from OUT to CTRL
+          JMP     CX
+  IX      JMP     IN1                     Jump to IN
+  OX      JMP     OUT1                    Jump to OUT
+  CX      JMP     CTRL1                   Jump to CTRL
+#+END_SRC
+
+The timing for the complete program using GNU MDK is as follows:
+
+#+BEGIN_SRC mixal :tangle ex15.mixal :noweb yes :exports results :mixvm time
+  ,* ex15.mixal
+  ,* Chris Vig (chris@invictus.so)
+
+  ,* -- Symbolic Constants --
+
+  INTAPE  EQU     0                       Input tape device number
+  OUTTAPE EQU     1                       Output tape device number
+  BUFS    EQU     3                       Number of available buffers
+  BLKSZ   EQU     100                     I/O block size
+  COUNT   EQU     100                     Number of blocks we want to copy
+
+  ,* -- Memory Buffers --
+
+          ORIG    0
+
+  <<ex15-buffers>>
+
+  ,* -- Instructions --
+
+          ORIG    3000
+
+  <<ex15-ctrl>>
+
+  <<ex15-in>>
+
+  <<ex15-out>>
+
+  ,* -- Coroutine Linkage --
+
+  <<ex15-linkage>>
+
+          END     START
+#+END_SRC
+
+#+RESULTS:
+: = Time =
+: Elapsed time: 4114 /Total program time: 4114 (Total uptime: 4114)
