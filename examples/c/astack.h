@@ -24,7 +24,7 @@ typedef char astack_el;
 /* -- Procedures -- */
 
 /* Creates a new array stack with the specified initial capacity. */
-astack_t astack_new(size_t capacity);
+astack_t astack_new(size_t capacity, bool expandable);
 
 /* Deletes an array stack. */
 void astack_delete(astack_t stack);

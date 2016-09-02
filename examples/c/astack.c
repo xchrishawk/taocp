@@ -15,6 +15,7 @@ struct astack
   astack_el* array;
   size_t count;
   size_t capacity;
+  bool expandable;
 };
 
 /* -- Procedure Prototypes -- */
@@ -23,13 +24,11 @@ static bool astack_resize(astack_t stack, size_t capacity);
 
 /* -- Procedures -- */
 
-astack_t astack_new(size_t capacity)
+astack_t astack_new(size_t capacity, bool expandable)
 {
   astack_el* array = (astack_el*)calloc(capacity, sizeof(astack_el));
   if (!array)
-  {
     return NULL;
-  }
 
   astack_t stack = (astack_t)malloc(sizeof(struct astack));
   if (!stack)
@@ -41,6 +40,7 @@ astack_t astack_new(size_t capacity)
   stack->array = array;
   stack->count = 0;
   stack->capacity = capacity;
+  stack->expandable = expandable;
 
   return stack;
 }
@@ -63,10 +63,18 @@ size_t astack_capacity(astack_t stack)
 
 bool astack_push(astack_t stack, astack_el el)
 {
-  if (stack->count == stack->capacity && !astack_resize(stack, stack->capacity * 2))
+  if (stack->count == stack->capacity)
   {
-    return false;
+    if (!stack->expandable)
+      return false;
+
+    size_t new_capacity = stack->capacity * 2;
+    if (!astack_resize(stack, new_capacity))
+      return false;
   }
+
+  if (stack->count == stack->capacity && !astack_resize(stack, stack->capacity * 2))
+    return false;
 
   stack->array[stack->count] = el;
   stack->count++;
@@ -76,9 +84,7 @@ bool astack_push(astack_t stack, astack_el el)
 bool astack_pop(astack_t stack, astack_el* el)
 {
   if (stack->count == 0)
-  {
     return false;
-  }
 
   *el = stack->array[stack->count - 1];
   stack->count--;
@@ -88,9 +94,7 @@ bool astack_pop(astack_t stack, astack_el* el)
 bool astack_peek(astack_t stack, astack_el* el)
 {
   if (stack->count == 0)
-  {
     return false;
-  }
 
   *el = stack->array[stack->count - 1];
   return true;
@@ -102,9 +106,7 @@ static bool astack_resize(astack_t stack, size_t new_capacity)
 {
   astack_el* new_array = (astack_el*)realloc(stack->array, sizeof(astack_el) * new_capacity);
   if (!new_array)
-  {
     return false;
-  }
 
   stack->array = new_array;
   stack->capacity = new_capacity;
