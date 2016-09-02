@@ -1,0 +1,222 @@
+#+TITLE: The Art of Computer Programming - Chapter 2.1 Exercises
+#+AUTHOR: Chris Vig
+#+EMAIL: chris@invictus.so
+
+* Chapter 2.1 - Introduction
+
+** Exercise 1
+
+~SUIT(NEXT(TOP))~ is 4 (spades). ~NEXT(NEXT(NEXT(TOP)))~ is the null pointer.
+
+** Exercise 2
+
+You would have this situation if you have a memory cell which contains a pointer
+to itself, for example, if the value ~1000~ was in the word at memory address
+~1000~.
+
+** Exercise 3
+
+The algorithm is:
+
+1. Set ~NEWCARD ← TOP~.
+2. Set ~TOP ← NEXT(TOP)~.
+
+** Exercise 4
+
+The algorithm is:
+
+1. Set ~X ← TOP~.
+2. While ~NEXT(X) != nil~, set ~X ← NEXT(X)~.
+3. Set ~NEXT(X) ← NEWCARD~.
+4. Set ~NEXT(NEWCARD) ← NIL~.
+5. Set ~TAG(NEWCARD) ← 1~ (make card face down).
+
+Basically we follow the chain of links until we reach the last element. Then we
+set the ~NEXT~ pointer for the current last element to the new last element, and
+set the new last element to face down.
+
+** Exercise 5
+
+The algorithm is:
+
+1. Set ~X ← TOP~, ~Y ← NIL~.
+2. While ~NEXT(X) != nil~, set ~Y ← X~ and then ~X ← NEXT(X)~.
+3. If ~Y != nil~, set ~NEXT(Y) ← nil~.
+4. Set ~NEWCARD ← X~.
+5. Set ~TAG(NEWCARD) ← 0~ (make card face up).
+
+** Exercise 6
+
+All four options will produce the same value, which will be equal to ~SUIT(TOP)~,
+the suit of the top card.
+
+** Exercise 7
+
+Option (a) is correct. It will pull the pointer value of ~NEXT(TOP)~ into ~rA~.
+
+For example, say ~TOP~ points to memory address ~1000~, which contains ~1001~ in
+the ~NEXT~ (~4:5~) field. Option (a) will load ~1001~ into ~rA~, while option (b)
+will load ~CONTENTS(1000)~ into ~rA~, which is not what's wanted in this case.
+
+** Exercise 8
+
+For the next two exercises, we'll use the following constants:
+
+#+NAME: cards-constants
+#+BEGIN_SRC mixal :exports code :eval no
+  ,* I/O
+  TTY     EQU     19
+  TTYBLK  EQU     14
+
+  ,* Constants for TAG field
+  FACEUP  EQU     0
+  FACEDN  EQU     1
+
+  ,* Constants for SUIT field
+  CLUBS   EQU     1
+  DMNDS   EQU     2
+  HEARTS  EQU     3
+  SPADES  EQU     4
+
+  ,* Constants for RANK field
+  ACE     EQU     1
+  JACK    EQU     11
+  QUEEN   EQU     12
+  KING    EQU     13
+
+  ,* Fields in card word
+  TAG     EQU     1:1
+  SUIT    EQU     2:2
+  RANK    EQU     3:3
+  NEXT    EQU     4:5
+#+END_SRC
+
+And the following stack of cards:
+
+#+NAME: cards-stack
+#+BEGIN_SRC mixal :exports code :eval no
+          ORIG    100
+
+          CON     FACEDN(TAG),CLUBS(SUIT),10(RANK),0(NEXT)
+          ALF     " 10 C"
+          CON     FACEUP(TAG),SPADES(SUIT),3(RANK),*-2(NEXT)
+          ALF     "  3 S"
+          CON     FACEUP(TAG),DMNDS(SUIT),2(RANK),*-2(NEXT)
+          ALF     "  2 D"
+  TOP1    CON     FACEUP(TAG),SPADES(SUIT),QUEEN(RANK),*-2(NEXT)
+          ALF     "  Q S"
+
+          ORIG    200
+
+  TOP     CON     TOP1                    Pointer to top of stack
+#+END_SRC
+
+The implementation of algorithm B is:
+
+#+NAME: ex8-main
+#+BEGIN_SRC mixal :exports code :eval no
+          ORIG    3000
+
+  MAIN    ENTA    0                       Initialize counter to zero
+          LD1     TOP                     Initialize r1 to top card
+
+  1H      INCA    1                       Increment counter
+          LD1     0,1(NEXT)               Load address of next word
+          J1NZ    1B                      If address is not null, loop again
+
+          HLT     0                       End - rA contains number of cards
+#+END_SRC
+
+Using the card stack above, this gives the correct output of 4 cards in the stack:
+
+#+BEGIN_SRC mixal :tangle ex8.mixal :noweb yes :exports results :mixvm rA
+  ,* ex8.mixal
+  ,* Chris Vig (chris@invictus.so)
+
+  ,* -- Symbolic Constants --
+
+  <<cards-constants>>
+
+  ,* -- Memory Constants --
+
+  <<cards-stack>>
+
+  ,* -- Instructions --
+
+  <<ex8-main>>
+
+          END     MAIN
+#+END_SRC
+
+#+RESULTS:
+: = Register A =
+: rA: + 00 00 00 00 04 (0000000004)
+
+** Exercise 9
+
+Using the code blocks in exercise 8 above, we can do:
+
+#+NAME: ex9-main
+#+BEGIN_SRC mixal :exports code :eval no
+          ORIG    3000
+
+  OUTBUF  ORIG    *+TTYBLK
+  OPAREN  ALF     "    ("
+  CPAREN  ALF     ")    "
+  BLANK   ALF     "     "
+
+  MAIN    LD1     TOP                     Initialize rI1 to address of first card
+
+  1H      LDA     1,1                     Load card title into rA
+          STA     OUTBUF+1                Store card title into output buffer
+          LDA     0,1(TAG)                Load tag into rA
+          JAZ     2F                      Is card face up?
+
+          LDX     OPAREN                  Card is face down - put brackets around name
+          STX     OUTBUF
+          LDX     CPAREN
+          STX     OUTBUF+2
+          JMP     3F
+
+  2H      LDX     BLANK                   Card is face up - put blanks around name
+          STX     OUTBUF
+          STX     OUTBUF+2
+
+  3H      OUT     OUTBUF(TTY)             Put output to teletype
+
+          LD1     0,1(NEXT)               Move rI1 to next card in stack
+          J1NZ    1B                      If rI1 is not null, loop again
+
+          HLT
+#+END_SRC
+
+The output from this is:
+
+#+NAME: ex9-tangled
+#+BEGIN_SRC mixal :tangle ex9.mixal :noweb yes :exports results :mixvm
+  ,* ex9.mixal
+  ,* Chris Vig (chris@invictus.so)
+
+  ,* -- Symbolic Constants --
+
+  <<cards-constants>>
+
+  ,* -- Memory Constants --
+
+  <<cards-stack>>
+
+  ,* -- Instructions --
+
+  <<ex9-main>>
+
+          END     MAIN
+#+END_SRC
+
+#+RESULTS: ex9-tangled
+: MIX> run
+: Running ...
+:        Q S
+:        2 D
+:        3 S
+:     ( 10 C)
+: ... done

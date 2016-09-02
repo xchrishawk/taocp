@@ -1,0 +1,83 @@
+
+* ex9.mixal
+* Chris Vig (chris@invictus.so)
+
+* -- Symbolic Constants --
+
+* I/O
+TTY     EQU     19
+TTYBLK  EQU     14
+
+* Constants for TAG field
+FACEUP  EQU     0
+FACEDN  EQU     1
+
+* Constants for SUIT field
+CLUBS   EQU     1
+DMNDS   EQU     2
+HEARTS  EQU     3
+SPADES  EQU     4
+
+* Constants for RANK field
+ACE     EQU     1
+JACK    EQU     11
+QUEEN   EQU     12
+KING    EQU     13
+
+* Fields in card word
+TAG     EQU     1:1
+SUIT    EQU     2:2
+RANK    EQU     3:3
+NEXT    EQU     4:5
+
+* -- Memory Constants --
+
+        ORIG    100
+
+        CON     FACEDN(TAG),CLUBS(SUIT),10(RANK),0(NEXT)
+        ALF     " 10 C"
+        CON     FACEUP(TAG),SPADES(SUIT),3(RANK),*-2(NEXT)
+        ALF     "  3 S"
+        CON     FACEUP(TAG),DMNDS(SUIT),2(RANK),*-2(NEXT)
+        ALF     "  2 D"
+TOP1    CON     FACEUP(TAG),SPADES(SUIT),QUEEN(RANK),*-2(NEXT)
+        ALF     "  Q S"
+
+        ORIG    200
+
+TOP     CON     TOP1                    Pointer to top of stack
+
+* -- Instructions --
+
+        ORIG    3000
+
+OUTBUF  ORIG    *+TTYBLK
+OPAREN  ALF     "    ("
+CPAREN  ALF     ")    "
+BLANK   ALF     "     "
+
+MAIN    LD1     TOP                     Initialize rI1 to address of first card
+
+1H      LDA     1,1                     Load card title into rA
+        STA     OUTBUF+1                Store card title into output buffer
+        LDA     0,1(TAG)                Load tag into rA
+        JAZ     2F                      Is card face up?
+
+        LDX     OPAREN                  Card is face down - put brackets around name
+        STX     OUTBUF
+        LDX     CPAREN
+        STX     OUTBUF+2
+        JMP     3F
+
+2H      LDX     BLANK                   Card is face up - put blanks around name
+        STX     OUTBUF
+        STX     OUTBUF+2
+
+3H      OUT     OUTBUF(TTY)             Put output to teletype
+
+        LD1     0,1(NEXT)               Move rI1 to next card in stack
+        J1NZ    1B                      If rI1 is not null, loop again
+
+        HLT
+
+        END     MAIN

@@ -1,0 +1,63 @@
+
+* ex8.mixal
+* Chris Vig (chris@invictus.so)
+
+* -- Symbolic Constants --
+
+* I/O
+TTY     EQU     19
+TTYBLK  EQU     14
+
+* Constants for TAG field
+FACEUP  EQU     0
+FACEDN  EQU     1
+
+* Constants for SUIT field
+CLUBS   EQU     1
+DMNDS   EQU     2
+HEARTS  EQU     3
+SPADES  EQU     4
+
+* Constants for RANK field
+ACE     EQU     1
+JACK    EQU     11
+QUEEN   EQU     12
+KING    EQU     13
+
+* Fields in card word
+TAG     EQU     1:1
+SUIT    EQU     2:2
+RANK    EQU     3:3
+NEXT    EQU     4:5
+
+* -- Memory Constants --
+
+        ORIG    100
+
+        CON     FACEDN(TAG),CLUBS(SUIT),10(RANK),0(NEXT)
+        ALF     " 10 C"
+        CON     FACEUP(TAG),SPADES(SUIT),3(RANK),*-2(NEXT)
+        ALF     "  3 S"
+        CON     FACEUP(TAG),DMNDS(SUIT),2(RANK),*-2(NEXT)
+        ALF     "  2 D"
+TOP1    CON     FACEUP(TAG),SPADES(SUIT),QUEEN(RANK),*-2(NEXT)
+        ALF     "  Q S"
+
+        ORIG    200
+
+TOP     CON     TOP1                    Pointer to top of stack
+
+* -- Instructions --
+
+        ORIG    3000
+
+MAIN    ENTA    0                       Initialize counter to zero
+        LD1     TOP                     Initialize r1 to top card
+
+1H      INCA    1                       Increment counter
+        LD1     0,1(NEXT)               Load address of next word
+        J1NZ    1B                      If address is not null, loop again
+
+        HLT     0                       End - rA contains number of cards
+
+        END     MAIN
