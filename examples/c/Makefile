@@ -3,7 +3,7 @@
 # Project name and inputs
 PROJECT_NAME 		:= taocp
 LIB_MODULES		:=
-TEST_MODULES		:= main
+TEST_MODULES		:= main astack_tests
 
 # Directories
 ROOT_DIR		:= .
