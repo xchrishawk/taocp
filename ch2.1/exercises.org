@@ -193,7 +193,7 @@ Using the code blocks in exercise 8 above, we can do:
 The output from this is:
 
 #+NAME: ex9-tangled
-#+BEGIN_SRC mixal :tangle ex9.mixal :noweb yes :exports results :mixvm
+#+BEGIN_SRC mixal :tangle ex9.mixal :noweb yes :exports results :mixvm output
   ,* ex9.mixal
   ,* Chris Vig (chris@invictus.so)
 
@@ -213,7 +213,7 @@ The output from this is:
 #+END_SRC
 
 #+RESULTS: ex9-tangled
-: MIX> run
+: = Output =
 : Running ...
 :        Q S
 :        2 D

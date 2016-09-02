@@ -181,7 +181,7 @@ off when it is re-entered.
 
 #+RESULTS: ex6-example
 #+begin_example
-MIX> run
+= Output =
 Running ...
 A1:  0000000000
 B1:  0000000000
