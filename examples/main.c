@@ -1,7 +1,8 @@
 #include <stdio.h>
+#include "arraystack.h"
+#include "util.h"
 
 int main(int argc, char** argv)
 {
-  printf("Hello world!\n");
   return 0;
 }
