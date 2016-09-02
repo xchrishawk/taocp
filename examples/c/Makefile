@@ -2,7 +2,7 @@
 
 # Project name and inputs
 PROJECT_NAME 		:= taocp
-LIB_MODULES		:= arraystack util
+LIB_MODULES		:=
 TEST_MODULES		:= main
 
 # Directories
@@ -36,7 +36,7 @@ LIBS			:=
 # Target-specific flags
 $(TEST_OBJS): CPPFLAGS	+= -D$(UNITTEST_SYMBOL)
 $(TEST_DEPS): CPPFLAGS	+= -D$(UNITTEST_SYMBOL)
-$(TEST_TARGET): LIBS	+=
+$(TEST_TARGET): LIBS	+= -lcunit
 
 # -- Targets --
 
