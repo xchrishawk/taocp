@@ -1,0 +1,100 @@
+
+* -- Symbolic Constants --
+
+TTY             EQU     19              Teletype device number
+TTYBLK          EQU     14              Teletype block size
+
+DATA            EQU     0:3             DATA field in word
+LINK            EQU     4:5             LINK field in word
+
+AVAILBUF        EQU     1000            Base address for AVAIL block
+AVAILMAX        EQU     100             Number of words to use for AVAIL
+
+* -- Instructions --
+
+                ORIG    3000
+
+* INITAVAIL - initialize AVAIL linked list
+
+INITAVAIL       STJ     9F                      Subroutine linkage
+
+                ENT1    AVAILMAX-1              rI1 := index of first available word
+                ENTA    AVAILBUF,1              rA := address of first available word
+                STA     AVAIL                   AVAIL := address of first avaialble word
+
+1H              ENTA    AVAILBUF-1,1            Get address of next available word
+                STA     AVAILBUF,1(LINK)        Store pointer in link field
+                DEC1    1                       Decrement index
+                J1Z     2F                      Are we out of nodes?
+                JMP     1B                      If not, loop again
+
+2H              STZ     0,1                     Store null pointer in last avail word
+9H              JMP     *                       Return to caller
+
+AVAIL           CON     0                       Pointer to next available node
+
+* UNDERFLOW/OVERFLOW - print error message and halt
+
+UNDERFLOW       LDA     1F
+                JMP     *+2
+OVERFLOW        LDA     2F
+                STA     3F
+                OUT     3F(TTY)
+                HLT     1
+1H              ALF     "UFLOW"
+2H              ALF     "OFLOW"
+3H              ORIG    *+TTYBLK
+
+* PUSH - push a new element onto a stack
+*
+* Calling sequence:
+*       - ENTA  (value to push)
+*       - JMP   PUSH
+*       - NOP   (address of stack top pointer)
+*
+* Postconditions:
+*       - rI1 contains address of word that was pushed
+*       - rA, rI2, and rI3 are modified
+
+PUSH            STJ     9F              Subroutine linkage
+
+                STJ     *+1(1:2)        rI2 := address of stack top pointer
+                ENT2    *
+                LD2     0,2(1:2)
+
+                LD1     AVAIL           rI1 := pointer to next avail word
+                J1Z     OVERFLOW        Overflow if necessary
+                LD3     0,1(LINK)       Update AVAIL using rI3
+                ST3     AVAIL
+
+                STA     0,1(DATA)       Write rA into DATA field of new word
+                LDA     0,2             Write stack top pointer into LINK field
+                STA     0,1(LINK)
+
+                ST1     0,2             Update stack top pointer
+
+9H              JMP     *
+
+* MAIN - main procedure
+
+MAIN            JMP     INITAVAIL
+
+                ENTA    1
+                JMP     PUSH
+                NOP     STACK
+
+                ENTA    2
+                JMP     PUSH
+                NOP     STACK
+
+                ENTA    3
+                JMP     PUSH
+                NOP     STACK
+
+                HLT
+
+* -- Variables --
+
+STACK           CON     0               Pointer to top of stack
+
+                END     MAIN

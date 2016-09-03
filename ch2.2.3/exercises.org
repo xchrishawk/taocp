@@ -1,0 +1,205 @@
+#+TITLE: The Art of Computer Programming - Chapter 2.2.3 Exercises
+#+AUTHOR: Chris Vig
+#+EMAIL: chris@invictus.so
+
+* Exercises
+
+** Exercise 1
+
+Operation (8) calls ~P ← AVAIL~, which is defined in operation (6). Operation
+(6) will =OVERFLOW= if there are no available nodes remaining, so there's no
+point in handling that case in operation (8).
+
+** Exercise 2
+
+This can be done using the following procedure:
+
+#+NAME: ex2-push
+#+BEGIN_SRC mixal :eval no
+  ,* PUSH - push a new element onto a stack
+  ,*
+  ,* Calling sequence:
+  ,*       - ENTA  (value to push)
+  ,*       - JMP   PUSH
+  ,*       - NOP   (address of stack top pointer)
+  ,*
+  ,* Postconditions:
+  ,*       - rI1 contains address of word that was pushed
+  ,*       - rA, rI2, and rI3 are modified
+
+  PUSH            STJ     9F              Subroutine linkage
+
+                  STJ     *+1(1:2)        rI2 := address of stack top pointer
+                  ENT2    *
+                  LD2     0,2(1:2)
+
+                  LD1     AVAIL           rI1 := pointer to next avail word
+                  J1Z     OVERFLOW        Overflow if necessary
+                  LD3     0,1(LINK)       Update AVAIL using rI3
+                  ST3     AVAIL
+
+                  STA     0,1(DATA)       Write rA into DATA field of new word
+                  LDA     0,2             Write stack top pointer into LINK field
+                  STA     0,1(LINK)
+
+                  ST1     0,2             Update stack top pointer
+
+  9H              JMP     *
+#+END_SRC
+
+As an example, here is the resulting memory after pushing 1, 2, and 3 (in that
+order) onto a stack:
+
+#+NAME: ex2-example
+#+BEGIN_SRC mixal :tangle ex2.mixal :noweb yes :exports results :mixvm m1097-m1099
+  ,* -- Symbolic Constants --
+
+  <<common-constants>>
+
+  ,* -- Instructions --
+
+                  ORIG    3000
+
+  <<common-initavail>>
+
+  <<common-overflow-underflow>>
+
+  <<ex2-push>>
+
+  ,* MAIN - main procedure
+
+  MAIN            JMP     INITAVAIL
+
+                  ENTA    1
+                  JMP     PUSH
+                  NOP     STACK
+
+                  ENTA    2
+                  JMP     PUSH
+                  NOP     STACK
+
+                  ENTA    3
+                  JMP     PUSH
+                  NOP     STACK
+
+                  HLT
+
+  ,* -- Variables --
+
+  STACK           CON     0               Pointer to top of stack
+
+                  END     MAIN
+#+END_SRC
+
+#+RESULTS: ex2-example
+: = Memory 1097-1099 =
+: 1097: + 00 00 03 17 10 (0000013386)
+: 1098: + 00 00 02 17 11 (0000009291)
+: 1099: + 00 00 01 00 00 (0000004096)
+
+* Common Code
+
+** Constants
+
+The following symbolic constants are used by several exercises:
+
+#+NAME: common-constants
+#+BEGIN_SRC mixal :eval no
+  TTY             EQU     19              Teletype device number
+  TTYBLK          EQU     14              Teletype block size
+
+  DATA            EQU     0:3             DATA field in word
+  LINK            EQU     4:5             LINK field in word
+
+  AVAILBUF        EQU     1000            Base address for AVAIL block
+  AVAILMAX        EQU     100             Number of words to use for AVAIL
+#+END_SRC
+
+** =AVAIL= Linked List Initialization
+
+To use the =AVAIL= pointer, we need to have a linked list of available nodes
+already initialized and ready to go. The following procedure will set this up:
+
+#+NAME: common-initavail
+#+BEGIN_SRC mixal :eval no
+  ,* INITAVAIL - initialize AVAIL linked list
+
+  INITAVAIL       STJ     9F                      Subroutine linkage
+
+                  ENT1    AVAILMAX-1              rI1 := index of first available word
+                  ENTA    AVAILBUF,1              rA := address of first available word
+                  STA     AVAIL                   AVAIL := address of first avaialble word
+
+  1H              ENTA    AVAILBUF-1,1            Get address of next available word
+                  STA     AVAILBUF,1(LINK)        Store pointer in link field
+                  DEC1    1                       Decrement index
+                  J1Z     2F                      Are we out of nodes?
+                  JMP     1B                      If not, loop again
+
+  2H              STZ     0,1                     Store null pointer in last avail word
+  9H              JMP     *                       Return to caller
+
+  AVAIL           CON     0                       Pointer to next available node
+#+END_SRC
+
+As an example, executing this block using the code gives the following linked
+list in memory. =AVAIL= is set to =1099=.
+
+#+NAME: common-initavail-example
+#+BEGIN_SRC mixal :noweb yes :exports results :mixvm m1000-m1005 m1095-m1100
+  ,* -- Symbolic Constants --
+
+  <<common-constants>>
+
+  ,* -- Instructions --
+
+                  ORIG    3000
+
+  ,* MAIN - main procedure
+
+  MAIN            JMP     INITAVAIL
+                  HLT
+
+  <<common-initavail>>
+
+                  END     MAIN
+#+END_SRC
+
+#+RESULTS: common-initavail-example
+#+begin_example
+= Memory 1000-1005 =
+1000: + 00 00 00 00 00 (0000000000)
+1001: + 00 00 00 15 40 (0000001000)
+1002: + 00 00 00 15 41 (0000001001)
+1003: + 00 00 00 15 42 (0000001002)
+1004: + 00 00 00 15 43 (0000001003)
+1005: + 00 00 00 15 44 (0000001004)
+
+= Memory 1095-1100 =
+1095: + 00 00 00 17 06 (0000001094)
+1096: + 00 00 00 17 07 (0000001095)
+1097: + 00 00 00 17 08 (0000001096)
+1098: + 00 00 00 17 09 (0000001097)
+1099: + 00 00 00 17 10 (0000001098)
+1100: + 00 00 00 00 00 (0000000000)
+#+end_example
+
+** Overflow/Underflow
+
+Here are simple "crash and burn" subroutines for =OVERFLOW= and =UNDERFLOW= to
+gracefully handle these conditions and halt the computer.
+
+#+NAME: common-overflow-underflow
+#+BEGIN_SRC mixal :eval no
+  ,* UNDERFLOW/OVERFLOW - print error message and halt
+
+  UNDERFLOW       LDA     1F
+                  JMP     *+2
+  OVERFLOW        LDA     2F
+                  STA     3F
+                  OUT     3F(TTY)
+                  HLT     1
+  1H              ALF     "UFLOW"
+  2H              ALF     "OFLOW"
+  3H              ORIG    *+TTYBLK
+#+END_SRC
