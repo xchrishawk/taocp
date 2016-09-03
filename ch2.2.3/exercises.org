@@ -97,6 +97,123 @@ order) onto a stack:
 : 1098: + 00 00 02 17 11 (0000009291)
 : 1099: + 00 00 01 00 00 (0000004096)
 
+** Exercise 3
+
+This can be implemented as follows:
+
+#+NAME: ex3-pop
+#+BEGIN_SRC mixal :eval no
+  ,* POP - pop an element off of a stack
+  ,*
+  ,* Calling sequence:
+  ,*       - JMP   POP
+  ,*       - NOP   (address of stack top pointer)
+  ,*       - JMP   (address to jump to in case of overflow)
+  ,*
+  ,* Postconditions:
+  ,*       - rA contains value popped off of the stack
+  ,*       - rI1 contains the address of the node popped off of the stack
+  ,*       - rI2 and rI3 are modified
+
+  POP             STJ     *+1(1:2)
+                  ENT3    *               rI3 := return address
+                  LD2     0,3(1:2)        rI2 := address of stack top pointer
+                  LD1     0,2             rI1 := address of stack top
+
+                  J1NZ    1F              If stack top is null...
+                  INC3    1                   underflow
+                  ST3     *+1(1:2)
+                  JMP     *
+
+  1H              INC3    2               Save off actual return address
+                  ST3     9F(1:2)
+
+                  LDA     0,1(DATA)       Get data we're popping off
+
+                  LD3     0,1(LINK)       Update stack top pointer
+                  ST3     0,2
+
+                  LD3     AVAIL(LINK)     Return freed word to AVAIL list
+                  ST3     0,1(LINK)
+                  ST1     AVAIL
+
+  9H              JMP     *
+#+END_SRC
+
+Here is the output from pushing 1, 2, and 3 (in that order) onto the stack, and
+then popping 4 times.
+
+#+NAME: ex3-example
+#+BEGIN_SRC mixal :tangle ex3.mixal :noweb yes :exports results :mixvm output m1097-m1099
+  ,* -- Symbolic Constants --
+
+  <<common-constants>>
+
+  ,* -- Instructions --
+
+                  ORIG    3000
+
+  <<common-initavail>>
+
+  <<common-overflow-underflow>>
+
+  <<ex2-push>>
+
+  <<ex3-pop>>
+
+  ,* MAIN - main procedure
+
+  MAIN            JMP     INITAVAIL
+
+                  ENTA    1
+                  JMP     PUSH
+                  NOP     STACK
+
+                  ENTA    2
+                  JMP     PUSH
+                  NOP     STACK
+
+                  ENTA    3
+                  JMP     PUSH
+                  NOP     STACK
+
+                  JMP     POP
+                  NOP     STACK
+                  JMP     UNDERFLOW
+
+                  JMP     POP
+                  NOP     STACK
+                  JMP     UNDERFLOW
+
+                  JMP     POP
+                  NOP     STACK
+                  JMP     UNDERFLOW
+
+                  JMP     POP
+                  NOP     STACK
+                  JMP     UNDERFLOW
+
+                  HLT
+
+  ,* -- Variables --
+
+  STACK           CON     0               Pointer to top of stack
+
+                  END     MAIN
+#+END_SRC
+
+#+RESULTS: ex3-example
+: = Output =
+: Running ...
+: UFLOW
+: ... done
+:
+: = Memory 1097-1099 =
+: 1097: + 00 00 03 17 08 (0000013384)
+: 1098: + 00 00 02 17 09 (0000009289)
+: 1099: + 00 00 01 17 10 (0000005194)
+
+
 * Common Code
 
 ** Constants
