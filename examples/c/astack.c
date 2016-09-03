@@ -61,40 +61,40 @@ size_t astack_capacity(astack_t stack)
   return stack->capacity;
 }
 
-astack_err astack_push(astack_t stack, astack_el el)
+taocp_err astack_push(astack_t stack, astack_el el)
 {
   if (stack->count == stack->capacity)
   {
     if (!stack->expandable)
-      return ASTACK_ERR_OVERFLOW;
+      return TAOCP_ERR_OVERFLOW;
 
     size_t new_capacity = stack->capacity * 2;
     if (!astack_resize(stack, new_capacity))
-      return ASTACK_ERR_MEMORY;
+      return TAOCP_ERR_MEMORY;
   }
 
   stack->array[stack->count] = el;
   stack->count++;
-  return ASTACK_ERR_OK;
+  return TAOCP_ERR_OK;
 }
 
-astack_err astack_pop(astack_t stack, astack_el* el)
+taocp_err astack_pop(astack_t stack, astack_el* el)
 {
   if (stack->count == 0)
-    return ASTACK_ERR_UNDERFLOW;
+    return TAOCP_ERR_UNDERFLOW;
 
   *el = stack->array[stack->count - 1];
   stack->count--;
-  return ASTACK_ERR_OK;
+  return TAOCP_ERR_OK;
 }
 
-astack_err astack_peek(astack_t stack, astack_el* el)
+taocp_err astack_peek(astack_t stack, astack_el* el)
 {
   if (stack->count == 0)
-    return ASTACK_ERR_UNDERFLOW;
+    return TAOCP_ERR_UNDERFLOW;
 
   *el = stack->array[stack->count - 1];
-  return ASTACK_ERR_OK;
+  return TAOCP_ERR_OK;
 }
 
 /* -- Private Functions -- */

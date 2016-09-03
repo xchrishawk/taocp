@@ -50,13 +50,13 @@ static void test_astack_push()
   /* verify capacity doesn't change until we run out of space */
   for (int i = 1; i <= INITIAL_CAPACITY; i++)
   {
-    CU_ASSERT_EQUAL(astack_push(stack, 'A'), ASTACK_ERR_OK);
+    CU_ASSERT_EQUAL(astack_push(stack, 'A'), TAOCP_ERR_OK);
     CU_ASSERT_EQUAL(astack_count(stack), i);
     CU_ASSERT_EQUAL(astack_capacity(stack), INITIAL_CAPACITY);
   }
 
   /* verify capacity is expanded and we can continue to push */
-  CU_ASSERT_EQUAL(astack_push(stack, 'B'), ASTACK_ERR_OK);
+  CU_ASSERT_EQUAL(astack_push(stack, 'B'), TAOCP_ERR_OK);
   CU_ASSERT_EQUAL(astack_count(stack), INITIAL_CAPACITY + 1);
   CU_ASSERT_EQUAL(astack_capacity(stack), INITIAL_CAPACITY * 2);
 
@@ -73,7 +73,7 @@ static void test_astack_pop()
   /* push alphabet onto stack */
   for (char c = START_CHAR; c <= END_CHAR; c++)
   {
-    CU_ASSERT_EQUAL(astack_push(stack, c), ASTACK_ERR_OK);
+    CU_ASSERT_EQUAL(astack_push(stack, c), TAOCP_ERR_OK);
     CU_ASSERT_EQUAL(astack_count(stack), c - START_CHAR + 1);
   }
 
@@ -81,7 +81,7 @@ static void test_astack_pop()
   for (char c = END_CHAR; c >= START_CHAR; c--)
   {
     char tmp;
-    CU_ASSERT_EQUAL(astack_pop(stack, &tmp), ASTACK_ERR_OK);
+    CU_ASSERT_EQUAL(astack_pop(stack, &tmp), TAOCP_ERR_OK);
     CU_ASSERT_EQUAL(tmp, c);
     CU_ASSERT_EQUAL(astack_count(stack), c - START_CHAR);
   }
@@ -91,7 +91,7 @@ static void test_astack_pop()
 
   /* verify we can't pop from an empty stack */
   char notused;
-  CU_ASSERT_EQUAL(astack_pop(stack, &notused), ASTACK_ERR_UNDERFLOW);
+  CU_ASSERT_EQUAL(astack_pop(stack, &notused), TAOCP_ERR_UNDERFLOW);
 
   astack_delete(stack);
 }
@@ -103,19 +103,19 @@ static void test_astack_peek()
   static const char CHAR = 'X';
 
   /* push char onto stack */
-  CU_ASSERT_EQUAL(astack_push(stack, CHAR), ASTACK_ERR_OK);
+  CU_ASSERT_EQUAL(astack_push(stack, CHAR), TAOCP_ERR_OK);
   CU_ASSERT_EQUAL(astack_count(stack), 1);
 
   /* verify we can peek without modifying the stack */
   char tmp;
-  CU_ASSERT_EQUAL(astack_peek(stack, &tmp), ASTACK_ERR_OK);
+  CU_ASSERT_EQUAL(astack_peek(stack, &tmp), TAOCP_ERR_OK);
   CU_ASSERT_EQUAL(tmp, CHAR);
   CU_ASSERT_EQUAL(astack_count(stack), 1);
 
   /* verify we can't peek when stack is empty */
-  CU_ASSERT_EQUAL(astack_pop(stack, &tmp), ASTACK_ERR_OK);
+  CU_ASSERT_EQUAL(astack_pop(stack, &tmp), TAOCP_ERR_OK);
   CU_ASSERT_EQUAL(astack_count(stack), 0);
-  CU_ASSERT_EQUAL(astack_peek(stack, &tmp), ASTACK_ERR_UNDERFLOW);
+  CU_ASSERT_EQUAL(astack_peek(stack, &tmp), TAOCP_ERR_UNDERFLOW);
 
   astack_delete(stack);
 }
@@ -125,10 +125,10 @@ static void test_astack_non_expandable()
   astack_t stack = astack_new(3, false);
 
   /* verify that non-expandable stack doesn't expand */
-  CU_ASSERT_EQUAL(astack_push(stack, 'A'), ASTACK_ERR_OK);
-  CU_ASSERT_EQUAL(astack_push(stack, 'B'), ASTACK_ERR_OK);
-  CU_ASSERT_EQUAL(astack_push(stack, 'C'), ASTACK_ERR_OK);
-  CU_ASSERT_EQUAL(astack_push(stack, 'D'), ASTACK_ERR_OVERFLOW);
+  CU_ASSERT_EQUAL(astack_push(stack, 'A'), TAOCP_ERR_OK);
+  CU_ASSERT_EQUAL(astack_push(stack, 'B'), TAOCP_ERR_OK);
+  CU_ASSERT_EQUAL(astack_push(stack, 'C'), TAOCP_ERR_OK);
+  CU_ASSERT_EQUAL(astack_push(stack, 'D'), TAOCP_ERR_OVERFLOW);
 
   astack_delete(stack);
 }

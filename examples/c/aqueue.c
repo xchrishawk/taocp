@@ -64,42 +64,42 @@ size_t aqueue_capacity(aqueue_t queue)
   return queue->capacity;
 }
 
-aqueue_err aqueue_enqueue(aqueue_t queue, aqueue_el el)
+taocp_err aqueue_enqueue(aqueue_t queue, aqueue_el el)
 {
   if (queue->count == queue->capacity)
   {
     if (!queue->expandable)
-      return AQUEUE_ERR_OVERFLOW;
+      return TAOCP_ERR_OVERFLOW;
 
     size_t new_capacity = queue->capacity * 2;
     if (!aqueue_resize(queue, new_capacity))
-      return AQUEUE_ERR_MEMORY;
+      return TAOCP_ERR_MEMORY;
   }
 
   size_t idx = (queue->front + queue->count) % queue->capacity;
   queue->array[idx] = el;
   queue->count++;
-  return AQUEUE_ERR_OK;
+  return TAOCP_ERR_OK;
 }
 
-aqueue_err aqueue_dequeue(aqueue_t queue, aqueue_el* el)
+taocp_err aqueue_dequeue(aqueue_t queue, aqueue_el* el)
 {
   if (queue->count == 0)
-    return AQUEUE_ERR_UNDERFLOW;
+    return TAOCP_ERR_UNDERFLOW;
 
   *el = queue->array[queue->front];
   queue->front = (queue->front + 1) % queue->capacity;
   queue->count--;
-  return AQUEUE_ERR_OK;
+  return TAOCP_ERR_OK;
 }
 
-aqueue_err aqueue_peek(aqueue_t queue, aqueue_el* el)
+taocp_err aqueue_peek(aqueue_t queue, aqueue_el* el)
 {
   if (queue->count == 0)
-    return AQUEUE_ERR_UNDERFLOW;
+    return TAOCP_ERR_UNDERFLOW;
 
   *el = queue->array[queue->front];
-  return AQUEUE_ERR_OK;
+  return TAOCP_ERR_OK;
 }
 
 /* -- Private Procedures -- */
