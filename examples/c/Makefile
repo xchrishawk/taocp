@@ -2,8 +2,8 @@
 
 # Project name and inputs
 PROJECT_NAME 		:= taocp
-LIB_MODULES		:= astack
-TEST_MODULES		:= main astack_tests
+LIB_MODULES		:= astack aqueue
+TEST_MODULES		:= main astack_tests aqueue_tests
 
 # Directories
 ROOT_DIR		:= .
@@ -26,6 +26,7 @@ TEST_TARGET		:= $(BIN_DIR)/$(PROJECT_NAME)-tests
 
 # Misc
 UNITTEST_SYMBOL		:= LIBTAOCP_TEST
+VALGRIND		:= valgrind
 
 # Toolchain flags
 CPPFLAGS		:=
@@ -47,7 +48,7 @@ all: $(LIB_TARGET) $(TEST_TARGET) test
 
 # Run unit tests
 test: $(TEST_TARGET)
-	$(TEST_TARGET)
+	$(VALGRIND) $(TEST_TARGET)
 
 # Clean, build all targets, and run unit tests
 rebuild: clean all
