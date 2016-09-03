@@ -1,0 +1,133 @@
+* -- Symbolic Constants --
+
+TTY	EQU	19
+TTYBLK	EQU	14
+
+MEM0	EQU	1000			Base of memory pool
+MEMLIM	EQU	1100			Limit of available memory for allocation
+
+DATA	EQU	0:3			Field specifier for data block of word
+LINK	EQU	4:5			Field specifier for link block of word
+
+* -- Memory Constants --
+
+	ORIG	MEMLIM
+
+AVAIL	CON	0			Address of next available node of memory
+MEMMAX	CON	MEM0			Initial max pointer for allocated memory
+
+STACK	CON	0			Pointer to first element in stack
+
+* -- Procedures --
+
+	ORIG	3000
+
+* MAIN - main entry point
+
+MAIN	ENTA	1
+	JMP	PUSH
+	ENTA	2
+	JMP	PUSH
+	ENTA	3
+	JMP	PUSH
+
+	ENTA	0
+
+	JMP	POP
+	JMP	POP
+	JMP	POP
+
+	JMP	POP
+
+	HLT
+
+* PUSH - pushes a new value onto the stack
+*
+* Preconditions:
+*	- rA contains the value to be pushed
+*
+* Postconditions:
+*	- rA is overwritten
+*	- rI1 is overwritten
+
+PUSH	STJ	9F			Store return address
+	STA	1F			Save rA temporarily
+	JMP	ALLOC			Allocate a word of memory, rI1 := address
+	LDA	1F			Restore rA
+	STA	0,1(DATA)		Store rA into INFO field of allocated word
+	LDA	STACK			Store pointer to next node in LINK field of allocated word
+	STA	0,1(LINK)
+	ST1	STACK			Save updated stack pointer
+9H	JMP	*			Return to caller
+1H	CON	0
+
+* POP - pops a value off of the stack
+*
+* Preconditions:
+*	- stack is not empty, otherwise UFLOW
+*
+* Postconditions:
+*	- rA is overwritten
+*	- rX is overwritten
+
+POP	STJ	9F			Store return address
+	ST1	8F			Store rI1
+	LD1	STACK			Get pointer to top of stack
+	J1Z	UFLOW			If stack is empty, then underflow
+	LDA	0,1(LINK)		Get link from top of stack into rA
+	LDX	0,1(DATA)		Get data from top of stack into rX
+	STA	STACK			Store updated top of stack pointer
+	JMP	FREE			Free the word we're not using any more
+	SLAX	5			Shift rA <- rX
+8H	ENT1	*			Restore rI1
+9H	JMP	*			Return to caller
+
+* ALLOC	- allocate a new word of memory
+*
+* Preconditions:
+*	- none
+*
+* Postconditions:
+*	- rA is overwritten
+*	- rI1 contains the address of the allocated word
+
+ALLOC	STJ	9F			Store return address
+	LD1	AVAIL			Do we have an AVAIL pointer?
+	J1Z	1F			If not, jump ahead
+	LDA	0,1(LINK)		Store pointer to next available block in AVAIL
+	STA	AVAIL
+	JMP	9F
+1H	LD1	MEMMAX			Get MEMMAX in rI1
+	CMP1	=MEMLIM=		Check for overflow
+	JGE	OFLOW
+	ENTA	1,1			Increment MEMMAX and write it back
+	STA	MEMMAX
+9H	JMP	*			Return to caller
+
+* FREE - free a word of memory
+*
+* Preconditions:
+*	- rI1 contains the word which should be freed
+*
+* Postconditions:
+*	- rA is overwritten
+
+FREE	STJ	9F			Store return address
+	LDA	AVAIL			Store link to AVAIL in freed word
+	STA	0,1(LINK)
+	ST1	AVAIL			Set AVAIL to freed word
+9H	JMP	*			Return to caller
+
+* UFLOW/OFLOW - underflow/overflow warnings
+
+UFLOW	LDA	1F
+	JMP	*+2
+OFLOW	LDA	2F
+	STA	OUTBUF
+	OUT	OUTBUF(TTY)
+	HLT	1
+1H	ALF	"UFLOW"
+2H	ALF	"OFLOW"
+OUTBUF	ORIG	*+TTYBLK
+
+	END	MAIN
