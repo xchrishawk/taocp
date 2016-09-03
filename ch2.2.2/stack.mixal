@@ -1,0 +1,49 @@
+
+* -- Symbolic Constants --
+
+TTY	EQU	19
+TTYBLK	EQU	14
+MAXSIZE	EQU	100
+
+* -- Memory Constants --
+
+	ORIG	1000
+
+BASE	ORIG	*+MAXSIZE		Memory block for the stack
+TOP	CON	0			Pointer to top element in stack
+
+* -- Subroutines --
+
+	ORIG	3000
+
+MAIN	ENTA	1			Push 1 onto stack
+	JMP	PUSH
+	ENTA	2			Push 2 onto stack
+	JMP	PUSH
+	ENTA	0			Reset rA to zero
+	JMP	POP			Pop 2 off of the stack
+	JMP	POP			Pop 1 off of the stack
+	HLT	0
+
+PUSH	STJ	9F			Subroutine linkage
+	LD1	TOP			Get current TOP pointer
+	CMP1	=MAXSIZE=		Are we out of space?
+	JGE	OFLOW			If so, overflow
+	STA	BASE,1			Store rA on top of stack
+	INC1	1			Increment top pointer
+	ST1	TOP			Store new top pointer
+9H	JMP	*			Return to caller
+
+POP	STJ	9F			Subroutine linkage
+	LD1	TOP			Get current TOP pointer
+	J1Z	UFLOW			If no elements, underflow
+	DEC1	1			Decrement top pointer
+	LDA	BASE,1			Get value at new top pointer into rA
+	ST1	TOP			Store new top pointer
+9H	JMP	*			Return to caller
+
+UFLOW	HLT	1
+
+OFLOW	HLT	2
+
+	END	MAIN
