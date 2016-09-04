@@ -1,5 +1,5 @@
 
-* ex3.mixal
+* ex4.mixal
 * Chris Vig (chris@invictus.so)
 
 * -- Symbolic Constants --
@@ -17,36 +17,27 @@ AVAILMAX        EQU     100             Number of words to use for AVAIL
 
                 ORIG    3000
 
-* INITAVAIL - initialize AVAIL linked list
+* MAIN - main procedure
 
-INITAVAIL       STJ     9F                      Subroutine linkage
+STACK           CON     0
 
-                ENT1    AVAILMAX-1              rI1 := index of first available word
-                ENTA    AVAILBUF,1              rA := address of first available word
-                STA     AVAIL                   AVAIL := address of first avaialble word
+MAIN            ENTA    1
+                JMP     PUSH
+                NOP     STACK
 
-1H              ENTA    AVAILBUF-1,1            Get address of next available word
-                STA     AVAILBUF,1(LINK)        Store pointer in link field
-                DEC1    1                       Decrement index
-                J1Z     2F                      Are we out of nodes?
-                JMP     1B                      If not, loop again
+                ENTA    2
+                JMP     PUSH
+                NOP     STACK
 
-2H              STZ     0,1                     Store null pointer in last avail word
-9H              JMP     *                       Return to caller
+                JMP     POP
+                NOP     STACK
+                JMP     UNDERFLOW
 
-AVAIL           CON     0                       Pointer to next available node
+                ENTA    3
+                JMP     PUSH
+                NOP     STACK
 
-* UNDERFLOW/OVERFLOW - print error message and halt
-
-UNDERFLOW       LDA     1F
-                JMP     *+2
-OVERFLOW        LDA     2F
-                STA     3F
-                OUT     3F(TTY)
-                HLT     1
-1H              ALF     "UFLOW"
-2H              ALF     "OFLOW"
-3H              ORIG    *+TTYBLK
+                HLT
 
 * PUSH - push a new element onto a stack
 *
@@ -114,42 +105,42 @@ POP             STJ     *+1(1:2)
 
 9H              JMP     *
 
-* MAIN - main procedure
+* OVERFLOW - allocate a new word of memory for AVAIL, if possible, otherwise halt
+*
+* Preconditions:
+*       - none
+*
+* Postconditions:
+*       - none
 
-MAIN            JMP     INITAVAIL
+OVERFLOW        ST1     7F(1:2)                 Store register state
+                ST2     8F(1:2)
 
-                ENTA    1
-                JMP     PUSH
-                NOP     STACK
+                STJ     *+1(1:2)                Calculate return address and store
+                ENT1    *
+                DEC1    2
+                ST1     9F(1:2)
 
-                ENTA    2
-                JMP     PUSH
-                NOP     STACK
+                LD1     POOLMAX                 Get current POOLMAX
+                CMP1    =AVAILBUF+AVAILMAX=     Is POOLMAX < maximum allowable?
+                JL      *+2                     If not, halt and catch fire
+                HLT     1
 
-                ENTA    3
-                JMP     PUSH
-                NOP     STACK
+                LD2     AVAIL                   Store current AVAIL ptr into newly allocated word
+                ST2     0,1(LINK)
 
-                JMP     POP
-                NOP     STACK
-                JMP     UNDERFLOW
+                ST1     AVAIL                   Update AVAIL
+                ENT2    1,1                     Update POOLMAX
+                ST2     POOLMAX
 
-                JMP     POP
-                NOP     STACK
-                JMP     UNDERFLOW
+7H              ENT1    *                       Restore registers
+8H              ENT2    *
+9H              JMP     *                       Return to caller
 
-                JMP     POP
-                NOP     STACK
-                JMP     UNDERFLOW
+POOLMAX         CON     AVAILBUF
 
-                JMP     POP
-                NOP     STACK
-                JMP     UNDERFLOW
+* UNDERFLOW - unrecoverable
 
-                HLT
-
-* -- Variables --
-
-STACK           CON     0               Pointer to top of stack
+UNDERFLOW       HLT     1
 
                 END     MAIN

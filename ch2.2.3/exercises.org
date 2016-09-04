@@ -52,6 +52,9 @@ order) onto a stack:
 
 #+NAME: ex2-example
 #+BEGIN_SRC mixal :tangle ex2.mixal :noweb yes :exports results :mixvm m1097-m1099
+  ,* ex2.mixal
+  ,* Chris Vig (chris@invictus.so)
+
   ,* -- Symbolic Constants --
 
   <<common-constants>>
@@ -145,6 +148,9 @@ then popping 4 times.
 
 #+NAME: ex3-example
 #+BEGIN_SRC mixal :tangle ex3.mixal :noweb yes :exports results :mixvm output m1097-m1099
+  ,* ex3.mixal
+  ,* Chris Vig (chris@invictus.so)
+
   ,* -- Symbolic Constants --
 
   <<common-constants>>
@@ -213,6 +219,104 @@ then popping 4 times.
 : 1098: + 00 00 02 17 09 (0000009289)
 : 1099: + 00 00 01 17 10 (0000005194)
 
+** Exercise 4
+
+This could be implemented as follows:
+
+#+NAME: ex4-overflow
+#+BEGIN_SRC mixal
+  ,* OVERFLOW - allocate a new word of memory for AVAIL, if possible, otherwise halt
+  ,*
+  ,* Preconditions:
+  ,*       - none
+  ,*
+  ,* Postconditions:
+  ,*       - none
+
+  OVERFLOW        ST1     7F(1:2)                 Store register state
+                  ST2     8F(1:2)
+
+                  STJ     *+1(1:2)                Calculate return address and store
+                  ENT1    *
+                  DEC1    2
+                  ST1     9F(1:2)
+
+                  LD1     POOLMAX                 Get current POOLMAX
+                  CMP1    =AVAILBUF+AVAILMAX=     Is POOLMAX < maximum allowable?
+                  JL      *+2                     If not, halt and catch fire
+                  HLT     1
+
+                  LD2     AVAIL                   Store current AVAIL ptr into newly allocated word
+                  ST2     0,1(LINK)
+
+                  ST1     AVAIL                   Update AVAIL
+                  ENT2    1,1                     Update POOLMAX
+                  ST2     POOLMAX
+
+  7H              ENT1    *                       Restore registers
+  8H              ENT2    *
+  9H              JMP     *                       Return to caller
+
+  POOLMAX         CON     AVAILBUF
+
+  ,* UNDERFLOW - unrecoverable
+
+  UNDERFLOW       HLT     1
+#+END_SRC
+
+Output of an example run after pushing =1=, pushing =2=, popping =2=, and then
+pushing =3= is:
+
+#+NAME: ex4-example
+#+BEGIN_SRC mixal :tangle ex4.mixal :noweb yes :exports results :mixvm m1000-m1003
+  ,* ex4.mixal
+  ,* Chris Vig (chris@invictus.so)
+
+  ,* -- Symbolic Constants --
+
+  <<common-constants>>
+
+  ,* -- Instructions --
+
+                  ORIG    3000
+
+  ,* MAIN - main procedure
+
+  STACK           CON     0
+
+  MAIN            ENTA    1
+                  JMP     PUSH
+                  NOP     STACK
+
+                  ENTA    2
+                  JMP     PUSH
+                  NOP     STACK
+
+                  JMP     POP
+                  NOP     STACK
+                  JMP     UNDERFLOW
+
+                  ENTA    3
+                  JMP     PUSH
+                  NOP     STACK
+
+                  HLT
+
+  <<ex2-push>>
+
+  <<ex3-pop>>
+
+  <<ex4-overflow>>
+
+                  END     MAIN
+#+END_SRC
+
+#+RESULTS: ex4-example
+: = Memory 1000-1003 =
+: 1000: + 00 00 01 00 00 (0000004096)
+: 1001: + 00 00 03 15 40 (0000013288)
+: 1002: + 00 00 00 00 00 (0000000000)
+: 1003: + 00 00 00 00 00 (0000000000)
 
 * Common Code
 

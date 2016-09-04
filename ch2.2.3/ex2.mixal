@@ -1,4 +1,7 @@
 
+* ex2.mixal
+* Chris Vig (chris@invictus.so)
+
 * -- Symbolic Constants --
 
 TTY             EQU     19              Teletype device number
