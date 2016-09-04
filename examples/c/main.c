@@ -7,6 +7,7 @@
 
 #include "astack_tests.h"
 #include "aqueue_tests.h"
+#include "deque_tests.h"
 
 /* -- Procedures -- */
 
@@ -16,6 +17,7 @@ int main(int argc, char** argv)
 
   astack_register_tests();
   aqueue_register_tests();
+  deque_register_tests();
 
   CU_basic_set_mode(CU_BRM_VERBOSE);
   CU_basic_run_tests();

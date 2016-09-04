@@ -2,8 +2,8 @@
 
 # Project name and inputs
 PROJECT_NAME 		:= taocp
-LIB_MODULES		:= astack aqueue
-TEST_MODULES		:= main astack_tests aqueue_tests
+LIB_MODULES		:= astack aqueue deque
+TEST_MODULES		:= main astack_tests aqueue_tests deque_tests
 
 # Directories
 ROOT_DIR		:= .
