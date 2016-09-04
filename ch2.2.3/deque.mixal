@@ -1,0 +1,44 @@
+* deque.mixal
+* Chris Vig (chris@invictus.so)
+
+* -- Symbolic Constants --
+
+TTY		EQU	19		Teletype device number
+TTYBLK		EQU	14		Teletype block size
+
+
+
+* -- Variables --
+
+		ORIG	2000
+
+TTYBUF		ORIG	*+TTYBLK	Output buffer for teletype
+
+* -- Procedures --
+
+		ORIG	3000
+
+MAIN		NOP
+
+		HLT
+
+* CLRTTYBUF - Clears the teletype buffer
+*
+* Preconditions:
+*	- none
+*
+* Postconditions
+*	- none
+
+CLRTTYBUF	STJ	9F		Set up for return
+		ST1	8F(0:3)
+
+		ENT1	TTYBLK		Clear TTY buffer
+1H		DEC1	1
+		STZ	TTYBUF,1
+		J1NZ	1B
+
+8H		ENT1	*		Restore state and return
+9H		JMP	*
+
+		END	MAIN
